@@ -6,6 +6,8 @@
 #include <iostream>
 #include <vector>
 #include <list>
+#define STB_PERLIN_IMPLEMENTATION
+#include <stb_perlin.h>
 // Helper structures. Declared here only for this exercise
 struct Vector2
 {
@@ -27,9 +29,14 @@ struct Vector3
 	}
 };
 
-// (todo) 01.8: Declare an struct with the vertex format
-
-
+struct Vertex
+{
+	Vector3 position;
+	Vector2 texCoord;
+	Vector3 color;
+	Vector3 normal;
+};
+Vector3 GetColorFromHeight(float height);
 
 TerrainApplication::TerrainApplication()
 	: Application(1024, 1024, "Terrain demo"), m_gridX(16), m_gridY(16), m_shaderProgram(0)
@@ -43,66 +50,115 @@ void TerrainApplication::Initialize()
 	// Build shaders and store in m_shaderProgram
 	BuildShaders();
 
-	// (todo) 01.1: Create containers for the vertex position
-	std::vector<Vector3>  positions;
-	std::vector<Vector2> texturePositions;
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
 
-	// Fill in vertex data
-	for (float x = 0.0f; x < m_gridX; x++) {
-		for (float y = 0.0f; y < m_gridY; y++) {
-			float textureX = x / (m_gridX / 4);
-			float textureY = y / (m_gridY / 4);
-			// position data
-			positions.push_back(Vector3(x / m_gridX - 0.5f, y / m_gridY - 0.5f, 0.0f));
-			positions.push_back(Vector3(x / m_gridX - 0.5f, (y + 1) / m_gridY - 0.5f, 0.0f));
-			positions.push_back(Vector3((x + 1) / m_gridX - 0.5f, (y + 1) / m_gridY - 0.5f, 0.0f));
+	float scaleX = 1.0f / m_gridX;
+	float scaleY = 1.0f / m_gridY;
 
-			positions.push_back(Vector3(x / m_gridX - 0.5f, y / m_gridY - 0.5f, 0.0f));
-			positions.push_back(Vector3((x + 1) / m_gridX - 0.5f, (y + 1) / m_gridY - 0.5f, 0.0f));
-			positions.push_back(Vector3((x + 1) / m_gridX - 0.5f, y / m_gridY - 0.5f, 0.0f));
+	unsigned int columnCount = m_gridX + 1;
+	unsigned int rowCount = m_gridY + 1;
 
-			// Texture coordinate data
-			texturePositions.push_back(Vector2(textureX, textureY));
-			texturePositions.push_back(Vector2(textureX, textureY + 1.0f / m_gridY));
-			texturePositions.push_back(Vector2(textureX + 1.0f / m_gridX, textureY + 1.0f / m_gridY));
+	for (unsigned int j = 0; j < rowCount; ++j)
+	{
+		for (unsigned int i = 0; i < columnCount; ++i)
+		{
+			// Compute the position of the vertex
+			Vertex& vertex = vertices.emplace_back();
+			float x = i * scaleX - 0.5f;
+			float y = j * scaleY - 0.5f;
+			float z = stb_perlin_fbm_noise3(x * 2, y * 2, 0.0f, 1.9f, 0.5f, 8) * 0.5f;
 
-			texturePositions.push_back(Vector2(textureX, textureY));
-			texturePositions.push_back(Vector2(textureX + 1.0f / m_gridX, textureY + 1.0f / m_gridY));
-			texturePositions.push_back(Vector2(textureX + 1.0f / m_gridX, textureY));
+			vertex.position = Vector3(x, y, z);
+			vertex.texCoord = Vector2(static_cast<float>(i), static_cast<float>(j));
+			vertex.color = GetColorFromHeight(z);
+			vertex.normal = Vector3(0.0f, 0.0f, 1.0f);
+
+			// Skip adding indices if it's the first row or column
+			if (i == 0 || j == 0) {
+				continue;
+			}
+
+			// Calculate indices for the quad formed by this and previous vertices
+			unsigned int current = j * columnCount + i;
+			unsigned int topLeft = (j - 1) * columnCount + i - 1;
+			unsigned int topRight = topLeft + 1;
+			unsigned int bottomLeft = current - 1;
+			unsigned int bottomRight = current;
+
+			// Define the two triangles of the quad
+			indices.push_back(topLeft);
+			indices.push_back(bottomLeft);
+			indices.push_back(topRight);
+
+			indices.push_back(topRight);
+			indices.push_back(bottomLeft);
+			indices.push_back(bottomRight);
 		}
 	}
-	size_t positionsSize = positions.size() * 3 * sizeof(Vector3); // 3 floats per position
-	size_t textureCoordsSize = texturePositions.size() * 2 * sizeof(Vector2); // 2 floats per texture coordinate
-	std::cout << "1:" << positionsSize << std::endl;
-	std::cout << "2:" << textureCoordsSize << std::endl;
+	for (unsigned int j = 0; j < rowCount; ++j)
+	{
+		for (unsigned int i = 0; i < columnCount; ++i)
+		{
+			// Get the vertex at (i, j)
+			int index = j * columnCount + i;
+			Vertex& vertex = vertices[index];
 
-	size_t totalSize = positionsSize + textureCoordsSize;
-	vbo.Bind();
-	vbo.AllocateData(totalSize);
+			// Compute the delta in X
+			unsigned int prevX = i > 0 ? index - 1 : index;
+			unsigned int nextX = i < m_gridX ? index + 1 : index;
+			float deltaHeightX = vertices[nextX].position.z - vertices[prevX].position.z;
+			float deltaX = vertices[nextX].position.x - vertices[prevX].position.x;
+			float x = deltaHeightX / deltaX;
 
-	size_t textureCoordsOffset = positionsSize;
+			// Compute the delta in Y
+			int prevY = j > 0 ? index - columnCount : index;
+			int nextY = j < m_gridY ? index + columnCount : index;
+			float deltaHeightY = vertices[nextY].position.z - vertices[prevY].position.z;
+			float deltaY = vertices[nextY].position.y - vertices[prevY].position.y;
+			float y = deltaHeightY / deltaY;
 
-	vbo.UpdateData(std::span(positions));
-	size_t currentIndex = 0;
-	vbo.UpdateData(std::span(texturePositions), textureCoordsOffset);
-
-
-	vao.Bind();
-	vbo.Bind();
-	vertexCount = positions.size();
-
+			// Compute the normal
+			vertex.normal = Vector3(x, y, 1.0f).Normalize();
+		}
+	}
+	// Define the attributes
 	VertexAttribute positionAttribute(Data::Type::Float, 3);
-	vao.SetAttribute(0, positionAttribute, 0);
-
 	VertexAttribute textureAttribute(Data::Type::Float, 2);
-	vao.SetAttribute(1, textureAttribute, positionsSize);
+	VertexAttribute colorAttribute(Data::Type::Float, 3);
+	VertexAttribute normalAttribute(Data::Type::Float, 3);
 
+
+	size_t positionOffset = 0u;
+	size_t texCoordOffset = positionOffset + positionAttribute.GetSize();
+	size_t colorOffset = texCoordOffset + textureAttribute.GetSize();
+	size_t normalOffset = colorOffset + colorAttribute.GetSize();
+
+	vbo.Bind();
+	vbo.AllocateData(std::span(vertices));
+
+	GLsizei stride = sizeof(Vertex);
+
+	// Set the vertex attributes
+	vao.Bind();
+	vao.SetAttribute(0, positionAttribute, static_cast<GLint>(positionOffset), stride);
+	vao.SetAttribute(1, textureAttribute, static_cast<GLint>(texCoordOffset), stride);
+	vao.SetAttribute(2, colorAttribute, static_cast<GLint>(colorOffset), stride);
+	vao.SetAttribute(3, normalAttribute, static_cast<GLint>(normalOffset), stride);
+
+	ebo.Bind();
+	ebo.AllocateData(std::span(indices));
+
+	// Unbind resources
 	vao.Unbind();
 	vbo.Unbind();
+	ebo.Unbind();
 
-	// uncomment this call to draw in wireframe polygons.
+	// Enable wireframe mode
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+
+	glEnable(GL_DEPTH_TEST);
 }
 
 void TerrainApplication::Update()
@@ -124,8 +180,11 @@ void TerrainApplication::Render()
 
 	// (todo) 01.1: Draw the grid
 	vao.Bind();
+	ebo.Bind();
 	//std::cout << vertexCount << std::endl;
-	glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+	//glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+	glDrawElements(GL_TRIANGLES, m_gridX * m_gridY * 6, GL_UNSIGNED_INT, nullptr);
+
 }
 
 void TerrainApplication::Cleanup()
@@ -133,6 +192,29 @@ void TerrainApplication::Cleanup()
 	Application::Cleanup();
 }
 
+Vector3 GetColorFromHeight(float height)
+{
+	if (height > 0.3f)
+	{
+		return Vector3(1.0f, 1.0f, 1.0f); // Snow
+	}
+	else if (height > 0.1f)
+	{
+		return Vector3(0.3f, 0.3f, 0.35f); // Rock
+	}
+	else if (height > -0.05f)
+	{
+		return Vector3(0.1f, 0.4f, 0.15f); // Grass
+	}
+	else if (height > -0.1f)
+	{
+		return Vector3(0.6f, 0.5f, 0.4f); // Sand
+	}
+	else
+	{
+		return Vector3(0.1f, 0.1f, 0.3f); // Water
+	}
+}
 
 void TerrainApplication::BuildShaders()
 {

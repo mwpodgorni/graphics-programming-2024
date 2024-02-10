@@ -16,12 +16,8 @@ const unsigned int SCR_HEIGHT = 512;
 
 int main()
 {
-    // glfw: initialize and configure
-    // ------------------------------
     DeviceGL deviceGL;
 
-    // glfw window creation
-    // --------------------
     Window window(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL");
     if (!window.IsValid())
     {
@@ -29,8 +25,6 @@ int main()
         return -1;
     }
 
-    // glad: load all OpenGL function pointers
-    // ---------------------------------------
     deviceGL.SetCurrentWindow(window);
     if (!deviceGL.IsReady())
     {
@@ -38,24 +32,17 @@ int main()
         return -1;
     }
 
-    // build and compile our shader program
-    // ------------------------------------
     int shaderProgram = buildShaderProgram();
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
     const int sides = 16;
     const float pi = 3.1416f;
     const float length = 0.5f * std::sqrt(2);
 
-    // Using std::array instead of regular arrays makes sure we don't access out of range
     std::array<float, 3 * (sides + 1)> vertices;
     std::array<unsigned int, 3 * sides> indices;
 
-    // first vertex centered at (0, 0, 0)
     vertices[0] = vertices[1] = vertices[2] = 0.0f;
 
-    // Loop over 2*PI with N sides
     float deltaAngle = 2 * pi / sides;
     for (int i = 0; i < sides; ++i)
     {
@@ -68,15 +55,12 @@ int main()
         indices[3 * i + 1] = i + 1;
         indices[3 * i + 2] = i + 2;
     }
-
-    // Connect last index with vertex 1 to close the circle
     indices[3 * sides - 1] = 1;
 
     VertexBufferObject vbo;
     VertexArrayObject vao;
     ElementBufferObject ebo;
 
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
     vao.Bind();
 
     vbo.Bind();
@@ -88,51 +72,28 @@ int main()
     VertexAttribute position(Data::Type::Float, 3);
     vao.SetAttribute(0, position, 0);
 
-    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
     VertexBufferObject::Unbind();
 
-    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
     VertexArrayObject::Unbind();
 
-    // Now we can unbind the EBO as well
     ElementBufferObject::Unbind();
 
-    // uncomment this call to draw in wireframe polygons.
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    // render loop
-    // -----------
     while (!window.ShouldClose())
     {
-        // input
-        // -----
         processInput(window.GetInternalWindow());
 
-        // render
-        // ------
         deviceGL.Clear(Color(0.2f, 0.3f, 0.3f, 1.0f));
 
-        // draw our first triangle
         glUseProgram(shaderProgram);
-        vao.Bind(); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        //glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+        vao.Bind();
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-        // VertexArrayObject::Unbind(); // no need to unbind it every time 
 
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
         window.SwapBuffers();
         deviceGL.PollEvents();
     }
 
-    // optional: de-allocate all resources once they've outlived their purpose:
-    // ------------------------------------------------------------------------
     glDeleteProgram(shaderProgram);
 
-    // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
-    // This is now done in the destructor of DeviceGL
     return 0;
 }
 
