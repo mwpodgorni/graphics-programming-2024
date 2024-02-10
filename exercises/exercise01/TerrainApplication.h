@@ -32,5 +32,6 @@ private:
 	VertexBufferObject vbo;
 	// (todo) 01.5: Declare an EBO
 	ElementBufferObject ebo;
+	int vertexCount;
 
 };

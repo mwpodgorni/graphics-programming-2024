@@ -6,7 +6,6 @@
 #include <iostream>
 #include <vector>
 #include <list>
-int vertexCount;
 // Helper structures. Declared here only for this exercise
 struct Vector2
 {
@@ -45,44 +44,64 @@ void TerrainApplication::Initialize()
 	BuildShaders();
 
 	// (todo) 01.1: Create containers for the vertex position
-	std::list<std::vector<float>> positions;
+	std::vector<Vector3>  positions;
+	std::vector<Vector2> texturePositions;
 
 	// Fill in vertex data
 	for (float x = 0.0f; x < m_gridX; x++) {
 		for (float y = 0.0f; y < m_gridY; y++) {
-			positions.push_back({ x / m_gridX - 0.5f, y / m_gridY - 0.5f, 0.0f });
-			positions.push_back({ x / m_gridX - 0.5f, (y + 1) / m_gridY - 0.5f, 0.0f });
-			positions.push_back({ (x + 1) / m_gridX - 0.5f, (y + 1) / m_gridY - 0.5f, 0.0f });
+			float textureX = x / (m_gridX / 4);
+			float textureY = y / (m_gridY / 4);
+			// position data
+			positions.push_back(Vector3(x / m_gridX - 0.5f, y / m_gridY - 0.5f, 0.0f));
+			positions.push_back(Vector3(x / m_gridX - 0.5f, (y + 1) / m_gridY - 0.5f, 0.0f));
+			positions.push_back(Vector3((x + 1) / m_gridX - 0.5f, (y + 1) / m_gridY - 0.5f, 0.0f));
 
-			positions.push_back({ x / m_gridX - 0.5f, y / m_gridY - 0.5f, 0.0f });
-			positions.push_back({ (x + 1) / m_gridX - 0.5f, (y + 1) / m_gridY - 0.5f, 0.0f });
-			positions.push_back({ (x + 1) / m_gridX - 0.5f, y / m_gridY - 0.5f, 0.0f });
+			positions.push_back(Vector3(x / m_gridX - 0.5f, y / m_gridY - 0.5f, 0.0f));
+			positions.push_back(Vector3((x + 1) / m_gridX - 0.5f, (y + 1) / m_gridY - 0.5f, 0.0f));
+			positions.push_back(Vector3((x + 1) / m_gridX - 0.5f, y / m_gridY - 0.5f, 0.0f));
+
+			// Texture coordinate data
+			texturePositions.push_back(Vector2(textureX, textureY));
+			texturePositions.push_back(Vector2(textureX, textureY + 1.0f / m_gridY));
+			texturePositions.push_back(Vector2(textureX + 1.0f / m_gridX, textureY + 1.0f / m_gridY));
+
+			texturePositions.push_back(Vector2(textureX, textureY));
+			texturePositions.push_back(Vector2(textureX + 1.0f / m_gridX, textureY + 1.0f / m_gridY));
+			texturePositions.push_back(Vector2(textureX + 1.0f / m_gridX, textureY));
 		}
 	}
+	size_t positionsSize = positions.size() * 3 * sizeof(Vector3); // 3 floats per position
+	size_t textureCoordsSize = texturePositions.size() * 2 * sizeof(Vector2); // 2 floats per texture coordinate
+	std::cout << "1:" << positionsSize << std::endl;
+	std::cout << "2:" << textureCoordsSize << std::endl;
 
-	// (todo) 01.1: Fill in vertex data
-	std::vector<float> flattenedPositions;
-	for (const auto& vec : positions) {
-		flattenedPositions.insert(flattenedPositions.end(), vec.begin(), vec.end());
-	}
+	size_t totalSize = positionsSize + textureCoordsSize;
+	vbo.Bind();
+	vbo.AllocateData(totalSize);
 
-	// (todo) 01.1: Initialize VAO, and VBO
+	size_t textureCoordsOffset = positionsSize;
+
+	vbo.UpdateData(std::span(positions));
+	size_t currentIndex = 0;
+	vbo.UpdateData(std::span(texturePositions), textureCoordsOffset);
+
+
 	vao.Bind();
 	vbo.Bind();
-	vbo.AllocateData<float>(flattenedPositions);
-	//vbo.AllocateData(reinterpret_cast<const std::byte*>(flattenedPositions.data()), flattenedPositions.size() * sizeof(float));
-		//vbo.AllocateData(reinterpret_cast<const std::byte*>(flattenedPositions.data()), flattenedPositions.size() * sizeof(int));
-	vertexCount = flattenedPositions.size() / 3;
-	VertexAttribute position(Data::Type::Float, 3);
-	vao.SetAttribute(0, position, 0);
-	// (todo) 01.5: Initialize EBO
+	vertexCount = positions.size();
 
+	VertexAttribute positionAttribute(Data::Type::Float, 3);
+	vao.SetAttribute(0, positionAttribute, 0);
 
-	// (todo) 01.1: Unbind VAO, and VBO
+	VertexAttribute textureAttribute(Data::Type::Float, 2);
+	vao.SetAttribute(1, textureAttribute, positionsSize);
 
+	vao.Unbind();
+	vbo.Unbind();
 
-	// (todo) 01.5: Unbind EBO
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	// uncomment this call to draw in wireframe polygons.
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 }
 
@@ -105,7 +124,7 @@ void TerrainApplication::Render()
 
 	// (todo) 01.1: Draw the grid
 	vao.Bind();
-	std::cout << vertexCount << std::endl;
+	//std::cout << vertexCount << std::endl;
 	glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 }
 
