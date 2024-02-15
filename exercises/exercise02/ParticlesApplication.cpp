@@ -16,17 +16,19 @@ struct Particle
 	float size;
 	float birth;
 	float duration;
+	Color color;
 
 };
 
 // List of attributes of the particle. Must match the structure above
-const std::array<VertexAttribute, 4> s_vertexAttributes =
+const std::array<VertexAttribute, 5> s_vertexAttributes =
 {
 	VertexAttribute(Data::Type::Float, 2), // position
 	// (todo) 02.X: Add more vertex attributes
 	VertexAttribute(Data::Type::Float, 1), // size
 	VertexAttribute(Data::Type::Float, 1), // birth
 	VertexAttribute(Data::Type::Float, 1), // duration
+	VertexAttribute(Data::Type::Float, 3), // color
 };
 
 
@@ -157,6 +159,7 @@ void ParticlesApplication::EmitParticle(const glm::vec2& position, float size, f
 	particle.size = size;
 	particle.birth = GetCurrentTime();
 	particle.duration = duration;
+	particle.color = RandomColor();
 
 
 	// Get the index in the circular buffer

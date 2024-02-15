@@ -5,9 +5,10 @@ layout (location = 0) in vec2 ParticlePosition;
 layout (location = 1) in float size;
 layout (location = 2) in float particleBirth;
 layout (location = 3) in float particleDuration;
+layout (location = 4) in vec4 particleColor;
 
 // (todo) 02.5: Add Color output variable here
-
+out vec4 Color;
 
 // (todo) 02.X: Add uniforms
 uniform float CurrentTime;
@@ -15,7 +16,7 @@ uniform float CurrentTime;
 void main()
 {
 	gl_Position = vec4(ParticlePosition, 0.0, 1.0);
-	gl_PointSize = 0;
+	Color = particleColor;
 	if(CurrentTime - particleBirth < particleDuration){
 		gl_PointSize = size;
 	} else {
