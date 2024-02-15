@@ -38,12 +38,13 @@ void ParticlesApplication::Initialize()
 
     InitializeShaders();
 
+    std::cout << "test0" << std::endl;
     // Initialize the mouse position with the current position of the mouse
     m_mousePosition = GetMainWindow().GetMousePosition(true);
 
     // (todo) 02.2: Enable the GL_PROGRAM_POINT_SIZE feature on the device
 
-
+    std::cout << "test" << std::endl;
     // (todo) 02.3: Enable the GL_BLEND feature on the device
 
 
