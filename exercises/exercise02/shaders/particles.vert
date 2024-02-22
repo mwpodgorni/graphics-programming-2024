@@ -6,7 +6,6 @@ layout (location = 2) in float ParticleBirth;
 layout (location = 3) in float ParticleDuration;
 layout (location = 4) in vec4 ParticleColor;
 layout (location = 5) in vec2 ParticleVelocity;
-
 out vec4 Color;
 
 uniform float CurrentTime;
