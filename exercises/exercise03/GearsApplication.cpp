@@ -71,7 +71,9 @@ void GearsApplication::Render()
 
 
 	// (todo) 03.4: Draw small gear linked to the center gear
+	glm::mat4 yellowGearMatrix(glm::translate(glm::vec3(0.0f, -0.2f, 0.0f)) * glm::rotate(-speed * time, axis));
 
+	DrawGear(m_smallGear, centerGearMatrix * yellowGearMatrix, Color(1.0f, 1.0f, 0.0f));
 
 	Application::Render();
 }
