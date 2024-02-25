@@ -66,6 +66,8 @@ void GearsApplication::Render()
 
 
 	// (todo) 03.3: Draw small gear at the top-left corner
+	glm::mat4 leftGearMatrix(glm::translate(glm::vec3(-1.0f, 1.0f, 0.0f)) * glm::rotate(speed * time * -16.0f / 30.0f - 0.05f, axis) * glm::scale(glm::vec3(7.5f)));
+	DrawGear(m_smallGear, leftGearMatrix, Color(0.0f, 0.0f, 1.0f));
 
 
 	// (todo) 03.4: Draw small gear linked to the center gear
