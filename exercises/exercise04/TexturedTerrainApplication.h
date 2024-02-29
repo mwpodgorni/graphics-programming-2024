@@ -44,11 +44,10 @@ private:
 
     Mesh m_terrainPatch;
     std::shared_ptr<Material> m_defaultMaterial;
-
     // (todo) 04.X: Add additional materials
-
+    std::shared_ptr<Material> m_terrainMaterial;
 
     std::shared_ptr<Texture2DObject> m_defaultTexture;
-
     // (todo) 04.X: Add additional textures
+    std::shared_ptr<Texture2DObject> m_heightmapTexture;
 };
