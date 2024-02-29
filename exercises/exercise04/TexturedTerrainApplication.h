@@ -14,40 +14,46 @@ class Texture2DObject;
 class TexturedTerrainApplication : public Application
 {
 public:
-    TexturedTerrainApplication();
+	TexturedTerrainApplication();
 
 protected:
-    void Initialize() override;
-    void Update() override;
-    void Render() override;
+	void Initialize() override;
+	void Update() override;
+	void Render() override;
 
 private:
-    void InitializeTextures();
-    void InitializeMaterials();
-    void InitializeMeshes();
+	void InitializeTextures();
+	void InitializeMaterials();
+	void InitializeMeshes();
 
-    void DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix);
+	void DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix);
 
-    std::shared_ptr<Texture2DObject> CreateDefaultTexture();
-    std::shared_ptr<Texture2DObject> CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords);
-    std::shared_ptr<Texture2DObject> LoadTexture(const char* path);
+	std::shared_ptr<Texture2DObject> CreateDefaultTexture();
+	std::shared_ptr<Texture2DObject> CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords);
+	std::shared_ptr<Texture2DObject> LoadTexture(const char* path);
 
-    void CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigned int gridY);
+	void CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigned int gridY);
 
 private:
-    unsigned int m_gridX, m_gridY;
+	unsigned int m_gridX, m_gridY;
 
-    Camera m_camera;
+	Camera m_camera;
 
-    ShaderLoader m_vertexShaderLoader;
-    ShaderLoader m_fragmentShaderLoader;
+	ShaderLoader m_vertexShaderLoader;
+	ShaderLoader m_fragmentShaderLoader;
 
-    Mesh m_terrainPatch;
-    std::shared_ptr<Material> m_defaultMaterial;
-    // (todo) 04.X: Add additional materials
-    std::shared_ptr<Material> m_terrainMaterial;
+	Mesh m_terrainPatch;
+	std::shared_ptr<Material> m_defaultMaterial;
+	// (todo) 04.X: Add additional materials
+	std::shared_ptr<Material> m_terrainMaterial;
+	std::shared_ptr<Material> m_terrainMaterial2;
+	std::shared_ptr<Material> m_terrainMaterial3;
+	std::shared_ptr<Material> m_terrainMaterial4;
 
-    std::shared_ptr<Texture2DObject> m_defaultTexture;
-    // (todo) 04.X: Add additional textures
-    std::shared_ptr<Texture2DObject> m_heightmapTexture;
+	std::shared_ptr<Texture2DObject> m_defaultTexture;
+	// (todo) 04.X: Add additional textures
+	std::shared_ptr<Texture2DObject> m_heightmapTexture;
+	std::shared_ptr<Texture2DObject> m_heightmapTexture2;
+	std::shared_ptr<Texture2DObject> m_heightmapTexture3;
+	std::shared_ptr<Texture2DObject> m_heightmapTexture4;
 };
