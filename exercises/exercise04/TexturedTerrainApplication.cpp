@@ -40,7 +40,7 @@ void TexturedTerrainApplication::Initialize()
 	GetDevice().EnableFeature(GL_DEPTH_TEST);
 
 	//Enable wireframe
-	GetDevice().SetWireframeEnabled(true);
+	//GetDevice().SetWireframeEnabled(true);
 }
 
 void TexturedTerrainApplication::Update()
@@ -81,6 +81,11 @@ void TexturedTerrainApplication::Render()
 
 void TexturedTerrainApplication::InitializeTextures()
 {
+	m_dirtTexture = LoadTexture("textures/dirt.png");
+	m_grassTexture = LoadTexture("textures/grass.jpg");
+	m_rockTexture = LoadTexture("textures/rock.jpg");
+	m_snowTexture = LoadTexture("textures/snow.jpg");
+
 	m_defaultTexture = CreateDefaultTexture();
 	// (todo) 04.3: Load terrain textures here
 	m_heightmapTexture = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(0, 0));
@@ -116,6 +121,14 @@ void TexturedTerrainApplication::InitializeMaterials()
 	m_terrainMaterial = std::make_shared<Material>(terrainShaderProgram);
 	m_terrainMaterial->SetUniformValue("Color", glm::vec4(1.0f));
 	m_terrainMaterial->SetUniformValue("Heightmap", m_heightmapTexture);
+	m_terrainMaterial->SetUniformValue("ColorTexture0", m_dirtTexture);
+	m_terrainMaterial->SetUniformValue("ColorTexture1", m_grassTexture);
+	m_terrainMaterial->SetUniformValue("ColorTexture2", m_rockTexture);
+	m_terrainMaterial->SetUniformValue("ColorTexture3", m_snowTexture);
+	m_terrainMaterial->SetUniformValue("ColorTextureRange01", glm::vec2(-0.2f, 0.0f));
+	m_terrainMaterial->SetUniformValue("ColorTextureRange12", glm::vec2(0.1f, 0.2f));
+	m_terrainMaterial->SetUniformValue("ColorTextureRange23", glm::vec2(0.25f, 0.3f));
+	m_terrainMaterial->SetUniformValue("ColorTextureScale", glm::vec2(0.125f));
 
 	m_terrainMaterial2 = std::make_shared<Material>(*m_terrainMaterial);
 	m_terrainMaterial2->SetUniformValue("Heightmap", m_heightmapTexture2);
@@ -171,16 +184,17 @@ std::shared_ptr<Texture2DObject> TexturedTerrainApplication::LoadTexture(const c
 
 
 	// (todo) 04.3: Load the texture data here
-	unsigned char* data = nullptr;
+	unsigned char* data = stbi_load(path, &width, &height, &components, 4);
+	//unsigned char* data = nullptr;
 
 	texture->Bind();
 	texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
 
 	// (todo) 04.3: Generate mipmaps
-
+	texture->GenerateMipmap();
 
 	// (todo) 04.3: Release texture data
-
+	stbi_image_free(data);
 
 	return texture;
 }
