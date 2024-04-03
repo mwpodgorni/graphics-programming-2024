@@ -15,7 +15,6 @@ public:
 
 public:
     Light();
-    virtual ~Light();
 
     virtual Type GetType() const = 0;
 

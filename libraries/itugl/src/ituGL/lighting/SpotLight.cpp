@@ -1,7 +1,5 @@
 #include <ituGL/lighting/SpotLight.h>
 
-#include <glm/geometric.hpp>
-
 SpotLight::SpotLight() : m_position(0.0f), m_direction(0.0f, 1.0f, 0.0f), m_attenuation(0.0f)
 {
 }
@@ -28,7 +26,7 @@ glm::vec3 SpotLight::GetDirection(const glm::vec3& fallback) const
 
 void SpotLight::SetDirection(const glm::vec3& direction)
 {
-    m_direction = glm::normalize(direction);
+    m_direction = direction;
 }
 
 glm::vec4 SpotLight::GetAttenuation() const

@@ -20,5 +20,7 @@ private:
     void InitializeMeshes();
 
 private:
+    Mesh m_fullscreenMesh;
+
     std::shared_ptr<Material> m_material;
 };
