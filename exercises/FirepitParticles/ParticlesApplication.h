@@ -4,6 +4,7 @@
 #include <ituGL/geometry/VertexBufferObject.h>
 #include <ituGL/geometry/VertexArrayObject.h>
 #include <ituGL/shader/ShaderProgram.h>
+#include <ituGL/utils/DearImGui.h>
 
 class ParticlesApplication : public Application
 {
@@ -33,8 +34,11 @@ private:
     static float RandomRange(float from, float to);
     static glm::vec2 RandomDirection();
     static Color RandomColor();
+    void RenderGUI();
 
 private:
+    // Helper object for debug GUI
+    DearImGui m_imGui;
     // All particles stored in a single VBO with interleaved attributes
     VertexBufferObject m_vbo;
 
@@ -58,4 +62,6 @@ private:
 
     // Max number of particles that can exist at the same time
     const unsigned int m_particleCapacity;
+
+    glm::vec2 m_particleVelocity;
 };

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <imgui.h>
 
 // Structure defining that Particle data
 struct Particle
@@ -38,11 +39,17 @@ ParticlesApplication::ParticlesApplication()
     , m_mousePosition(0)
     , m_particleCount(0)
     , m_particleCapacity(2048)  // You can change the capacity here to have more particles
+    , m_particleVelocity(5) 
 {
 }
 
 void ParticlesApplication::Initialize()
 {
+    Application::Initialize();
+
+    // Initialize DearImGUI
+    m_imGui.Initialize(GetMainWindow());
+
     InitializeGeometry();
 
     InitializeShaders();
@@ -112,6 +119,22 @@ void ParticlesApplication::Render()
     glDrawArrays(GL_POINTS, 0, std::min(m_particleCount, m_particleCapacity));
 
     Application::Render();
+    // Render the debug user interface
+    RenderGUI();
+}
+void ParticlesApplication::RenderGUI()
+{
+    m_imGui.BeginFrame();
+
+    // Add debug controls for light properties
+    ImGui::DragFloat2("Particle Velocity", &m_particleVelocity[0]);
+    ImGui::Separator();
+    //ImGui::DragFloat3("Light position", &m_lightPosition[0], 0.1f);
+    //ImGui::ColorEdit3("Light color", &m_lightColor[0]);
+    //ImGui::DragFloat("Light intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
+    //ImGui::Separator();
+
+    m_imGui.EndFrame();
 }
 
 // Nothing to do in this method for this exercise.
@@ -169,8 +192,11 @@ void ParticlesApplication::EmitParticle(const glm::vec2& position, float size, f
     particle.birth = GetCurrentTime();
     particle.duration = duration;
     particle.color = color;
-    particle.velocity = velocity;
+    //particle.velocity = RandomDirection() * 2.0f;
+    //particle.velocity = velocity;
 
+    particle.velocity = m_particleVelocity;
+    
     // Get the index in the circular buffer
     unsigned int particleIndex = m_particleCount % m_particleCapacity;
 
