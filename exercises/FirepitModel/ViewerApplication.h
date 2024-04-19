@@ -11,47 +11,47 @@ class Texture2DObject;
 class ViewerApplication : public Application
 {
 public:
-    ViewerApplication();
+	ViewerApplication();
 
 protected:
-    void Initialize() override;
-    void Update() override;
-    void Render() override;
-    void Cleanup() override;
+	void Initialize() override;
+	void Update() override;
+	void Render() override;
+	void Cleanup() override;
 
 private:
-    void InitializeModel();
-    void InitializeCamera();
-    void InitializeLights();
+	void InitializeModel();
+	void InitializeCamera();
+	void InitializeLights();
 
-    void UpdateCamera();
+	void UpdateCamera();
 
-    void RenderGUI();
+	void RenderGUI();
 
 private:
-    // Helper object for debug GUI
-    DearImGui m_imGui;
+	// Helper object for debug GUI
+	DearImGui m_imGui;
 
-    // Mouse position for camera controller
-    glm::vec2 m_mousePosition;
+	// Mouse position for camera controller
+	glm::vec2 m_mousePosition;
 
-    // Camera controller parameters
-    Camera m_camera;
-    glm::vec3 m_cameraPosition;
-    float m_cameraTranslationSpeed;
-    float m_cameraRotationSpeed;
-    bool m_cameraEnabled;
-    bool m_cameraEnablePressed;
+	// Camera controller parameters
+	Camera m_camera;
+	glm::vec3 m_cameraPosition;
+	float m_cameraTranslationSpeed;
+	float m_cameraRotationSpeed;
+	bool m_cameraEnabled;
+	bool m_cameraEnablePressed;
 
-    // Loaded model
-    Model m_model;
+	// Loaded model
+	Model m_model;
 
-    // Add light variables
-    glm::vec3 m_ambientColor;
-    glm::vec3 m_lightColor;
-    float m_lightIntensity;
-    glm::vec3 m_lightPosition;
+	// Add light variables
+	glm::vec3 m_ambientColor;
+	glm::vec3 m_lightColor;
+	float m_lightIntensity;
+	glm::vec3 m_lightPosition;
 
-    // Specular exponent debug
-    float m_specularExponentGrass;
+	// Specular exponent debug
+	float m_specularExponentGrass;
 };
