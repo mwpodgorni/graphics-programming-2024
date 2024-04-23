@@ -26,7 +26,6 @@ Shader ShaderLoader::Load(const char* path)
 {
     Shader shader(m_type);
     std::ifstream file(path);
-    std::cout << path << std::endl;
     assert(file.is_open());
     std::stringstream stringStream;
     stringStream << file.rdbuf() << '\0';

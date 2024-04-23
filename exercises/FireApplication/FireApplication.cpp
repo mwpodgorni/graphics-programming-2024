@@ -189,6 +189,10 @@ void FireApplication::InitializeModels()
 	loader.SetMaterialProperty(ModelLoader::MaterialProperty::DiffuseTexture, "ColorTexture");
 	loader.SetMaterialProperty(ModelLoader::MaterialProperty::NormalTexture, "NormalTexture");
 	loader.SetMaterialProperty(ModelLoader::MaterialProperty::SpecularTexture, "SpecularTexture");
+
+
+	std::shared_ptr<Model> campfireModel = loader.LoadShared("models/campfire2/source/campfire.obj");
+	m_scene.AddSceneNode(std::make_shared<SceneModel>("campfire", campfireModel));
 }
 
 void FireApplication::InitializeRenderer()
