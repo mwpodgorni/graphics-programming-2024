@@ -7,9 +7,9 @@
 #include <ituGL/camera/Camera.h>
 #include <ituGL/geometry/Model.h>
 #include <ituGL/utils/DearImGui.h>
+#include <ituGL/shader/Material.h>
 
 class Texture2DObject;
-
 class FinalProject : public Application
 {
 public:
@@ -43,7 +43,7 @@ private:
 	void LoadAndCompileShader(Shader& shader, const char* path);
 
 	// Emit a new particle
-	void EmitParticle(const glm::vec2& position, float size, float duration, const Color& color, const glm::vec2& velocity);
+	void EmitParticle();
 
 	// Helper methods for random values
 	static float Random01();
@@ -75,8 +75,6 @@ private:
 	float m_lightIntensity;
 	glm::vec3 m_lightPosition;
 
-	// Specular exponent debug
-	float m_specularExponentGrass;
 
 	// All particles stored in a single VBO with interleaved attributes
 	VertexBufferObject m_vbo;
@@ -92,6 +90,8 @@ private:
 
 	// Location of the "Gravity" uniform
 	ShaderProgram::Location m_gravityUniform;
+	ShaderProgram::Location m_textureUniform;
+	std::shared_ptr<Material> m_particleMaterial;
 
 
 	// Total number of particles created

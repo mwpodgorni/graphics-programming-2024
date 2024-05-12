@@ -12,6 +12,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+
 // Structure defining that Particle data
 struct Particle
 {
@@ -21,10 +22,11 @@ struct Particle
 	float duration;
 	Color color;
 	glm::vec2 velocity;
+	glm::vec2 uv;
 };
 
 // List of attributes of the particle. Must match the structure above
-const std::array<VertexAttribute, 6> s_vertexAttributes =
+const std::array<VertexAttribute, 7> s_vertexAttributes =
 {
 	VertexAttribute(Data::Type::Float, 2), // position
 	VertexAttribute(Data::Type::Float, 1), // size
@@ -32,6 +34,7 @@ const std::array<VertexAttribute, 6> s_vertexAttributes =
 	VertexAttribute(Data::Type::Float, 1), // duration
 	VertexAttribute(Data::Type::Float, 4), // color
 	VertexAttribute(Data::Type::Float, 2), // velocity
+	VertexAttribute(Data::Type::Float, 2),  // uv
 };
 FinalProject::FinalProject()
 	: Application(1024, 1024, "Viewer demo")
@@ -45,11 +48,10 @@ FinalProject::FinalProject()
 	, m_lightColor(0.0f)
 	, m_lightIntensity(0.0f)
 	, m_lightPosition(0.0f)
-	, m_specularExponentGrass(100.0f)
 	, m_currentTimeUniform(0)
 	, m_gravityUniform(0)
 	, m_particleCount(0)
-	, m_particleCapacity(2048)  // You can change the capacity here to have more particles
+	, m_particleCapacity(5000)  // You can change the capacity here to have more particles
 {
 }
 
@@ -66,12 +68,8 @@ void FinalProject::Initialize()
 	InitializeShaders();
 
 	DeviceGL& device = GetDevice();
-	device.EnableFeature(GL_DEPTH_TEST);
-	device.SetVSyncEnabled(true);
+	GetDevice().EnableFeature(GL_DEPTH_TEST);
 
-
-	// Initialize the mouse position with the current position of the mouse
-	m_mousePosition = GetMainWindow().GetMousePosition(true);
 
 	// Enable GL_PROGRAM_POINT_SIZE to have variable point size per-particle
 	GetDevice().EnableFeature(GL_PROGRAM_POINT_SIZE);
@@ -88,31 +86,17 @@ void FinalProject::Initialize()
 
 	// Get "Gravity" uniform location in the shader program
 	m_gravityUniform = m_shaderProgram.GetUniformLocation("Gravity");
+	m_textureUniform = m_shaderProgram.GetUniformLocation("FireTexture");
 }
 
 void FinalProject::Update()
 {
 	Application::Update();
-	//std::cout << "Update" << std::endl;
 	UpdateCamera();
 	const Window& window = GetMainWindow();
 
-	// Get the mouse position this frame
-	glm::vec2 mousePosition = window.GetMousePosition(true);
+	EmitParticle();
 
-	// Emit particles while the left button is pressed
-	//if (window.IsMouseButtonPressed(Window::MouseButton::Left))
-	//{
-	float size = RandomRange(10.0f, 30.0f);
-	float duration = RandomRange(1.0f, 2.0f);
-	Color color = RandomColor();
-	glm::vec2 velocity = 0.5f * (mousePosition - m_mousePosition) / GetDeltaTime();
-
-	EmitParticle(mousePosition, size, duration, color, velocity);
-	//}
-
-	// save the mouse position (to compare next frame and obtain velocity)
-	m_mousePosition = mousePosition;
 }
 
 void FinalProject::Render()
@@ -130,11 +114,10 @@ void FinalProject::Render()
 	m_shaderProgram.SetUniform(m_currentTimeUniform, GetCurrentTime());
 
 	// Set Gravity uniform
-	m_shaderProgram.SetUniform(m_gravityUniform, -9.8f);
+	m_shaderProgram.SetUniform(m_gravityUniform, 0.0f);
 
 	// Bind the particle system VAO
 	m_vao.Bind();
-
 	// Draw points. The amount of points can't exceed the capacity
 	glDrawArrays(GL_POINTS, 0, std::min(m_particleCount, m_particleCapacity));
 	// Render the debug user interface
@@ -244,7 +227,6 @@ void FinalProject::RenderGUI()
 	ImGui::ColorEdit3("Light color", &m_lightColor[0]);
 	ImGui::DragFloat("Light intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
 	ImGui::Separator();
-	ImGui::DragFloat("Specular exponent (grass)", &m_specularExponentGrass, 1.0f, 0.0f, 1000.0f);
 
 	m_imGui.EndFrame();
 }
@@ -362,17 +344,22 @@ void FinalProject::InitializeShaders()
 	}
 }
 
-void FinalProject::EmitParticle(const glm::vec2& position, float size, float duration, const Color& color, const glm::vec2& velocity)
+void FinalProject::EmitParticle()
 {
+	float size = RandomRange(10.0f, 30.0f);
+	float duration = RandomRange(1.0f, 2.0f);
+	Color color = RandomColor();
+	float xOffset = RandomRange(-0.1f, 0.1f);
 	// Initialize the particle
 	Particle particle;
-	particle.position = glm::vec2(-0.02f, -0.45f);
+	particle.position = glm::vec2(-0.02f + xOffset, -0.45f);
 	particle.size = size;
 	particle.birth = GetCurrentTime();
-	particle.duration = duration;
+	particle.duration = RandomRange(1.0f, 3.0f);
 	particle.color = color;
 	particle.velocity = RandomDirection() * RandomRange(0.5f, 2.0f);
-
+	particle.uv = glm::vec2(0.0f, 0.0f);
+	std::cout << "EmitParticle" << particle.position.x << std::endl;
 	// Get the index in the circular buffer
 	unsigned int particleIndex = m_particleCount % m_particleCapacity;
 

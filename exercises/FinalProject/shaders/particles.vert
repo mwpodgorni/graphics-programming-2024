@@ -14,15 +14,35 @@ uniform float Gravity;
 
 void main()
 {
-	Color = ParticleColor;
-	float age = CurrentTime - ParticleBirth;
-	gl_PointSize = ParticleSize * (1.0 + abs(sin(age * 10.0)) * 0.5);
+    float age = CurrentTime - ParticleBirth;
+    gl_PointSize = age < ParticleDuration ? ParticleSize : 0;
 
-	// initial position (x0)
-	vec2 position = ParticlePosition;
-	// add velocity: initial velocity (v0) * age
-	position += ParticleVelocity * age;
-	// add gravity: 1/2  gravity (a) * age^2
-	position += 0.5f * vec2(0, Gravity) * age * age;
-	gl_Position = vec4(position, -1.0, 1);
+    float initialVelocity = 0.1;
+    float acceleration = 0.05;
+    float fadingSpeed = 0.005;
+
+    float velocityFactor = min(1.0, age / ParticleDuration);
+
+    vec2 velocity = vec2(0, initialVelocity + acceleration * velocityFactor);
+    velocity -= vec2(0, fadingSpeed * (ParticleDuration - age));
+
+    vec2 position = ParticlePosition;
+    
+    // Adjust x position based on initial x position
+    if (ParticlePosition.x < 0.0) {
+        // Move particles to the right until x = 0
+        position.x += abs(ParticlePosition.x) * velocityFactor;
+    } else if (ParticlePosition.x > 0.0) {
+        // Move particles to the left until x = 0
+        position.x -= ParticlePosition.x * velocityFactor;
+    }
+    
+    position += velocity * age;
+    position += 0.5 * vec2(0, Gravity) * age * age;
+    gl_Position = vec4(position, -1.0, 1);
+
+    float t = clamp(age / ParticleDuration, 0.0, 1.0);
+    Color = mix(vec4(1.0, 1.0, 0.0, 1.0), vec4(1.0, 0.5, 0.0, 1.0), smoothstep(0.0, 0.333, t));
+    Color = mix(Color, vec4(1.0, 0.5, 0.0, 1.0), smoothstep(0.333, 0.666, t));
+    Color = mix(Color, vec4(0.0, 0.0, 0.0, 1.0), smoothstep(0.666, 1.0, t));
 }
