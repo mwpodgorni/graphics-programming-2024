@@ -5,6 +5,7 @@
 #include <ituGL/renderer/Renderer.h>
 #include <ituGL/scene/Scene.h>
 #include <ituGL/application/Application.h>
+#include "ParticlesApplication.h"
 
 class TextureCubemapObject;
 class Material;
@@ -39,4 +40,5 @@ private:
 	std::shared_ptr<TextureCubemapObject> m_skyboxTexture;
 	// Default material
 	std::shared_ptr<Material> m_defaultMaterial;
+	std::unique_ptr<ParticlesApplication> m_particlesApplication;
 };

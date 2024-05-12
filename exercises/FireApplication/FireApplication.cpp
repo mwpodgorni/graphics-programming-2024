@@ -34,15 +34,16 @@ FireApplication::FireApplication()
 
 void FireApplication::Initialize()
 {
+	m_particlesApplication = std::make_unique<ParticlesApplication>();
 	std::cout << "initialize" << std::endl;
 	Application::Initialize();
 	// Initialize DearImGUI
 	m_imGui.Initialize(GetMainWindow());
-
+	m_particlesApplication->Initialize();
 	InitializeCamera();
 	InitializeLights();
 	InitializeMaterials();
-	InitializeModels();
+	//InitializeModels();
 	InitializeRenderer();
 	// Enable GL_PROGRAM_POINT_SIZE to have variable point size per-particle
 	GetDevice().EnableFeature(GL_PROGRAM_POINT_SIZE);
@@ -59,6 +60,7 @@ void FireApplication::Update()
 {
 	Application::Update();
 	m_cameraController.Update(GetMainWindow(), GetDeltaTime());
+	m_particlesApplication->Update(GetMainWindow(), GetDeltaTime());
 	// Add the scene nodes to the renderer
 	RendererSceneVisitor rendererSceneVisitor(m_renderer);
 	m_scene.AcceptVisitor(rendererSceneVisitor);
@@ -66,8 +68,9 @@ void FireApplication::Update()
 
 void FireApplication::Render()
 {
-	Application::Render();
 	GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 0.0f), true, 1.0f);
+	m_particlesApplication->Render(GetDeltaTime());
+	Application::Render();
 	m_renderer.Render();
 	//RenderGUI();
 }
@@ -158,48 +161,48 @@ void FireApplication::InitializeMaterials()
 void FireApplication::InitializeModels()
 {
 	std::cout << "InitializeModels" << std::endl;
-	m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/forest-skybox2.png", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
-	m_skyboxTexture->Bind();
-	float maxLod;
-	m_skyboxTexture->GetParameter(TextureObject::ParameterFloat::MaxLod, maxLod);
-	TextureCubemapObject::Unbind();
-	m_defaultMaterial->SetUniformValue("AmbientColor", glm::vec3(0.25f));
+	//m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/forest-skybox2.png", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
+	//m_skyboxTexture->Bind();
+	//float maxLod;
+	//m_skyboxTexture->GetParameter(TextureObject::ParameterFloat::MaxLod, maxLod);
+	//TextureCubemapObject::Unbind();
+	//m_defaultMaterial->SetUniformValue("AmbientColor", glm::vec3(0.25f));
 
-	m_defaultMaterial->SetUniformValue("EnvironmentTexture", m_skyboxTexture);
-	m_defaultMaterial->SetUniformValue("EnvironmentMaxLod", maxLod);
-	m_defaultMaterial->SetUniformValue("Color", glm::vec3(1.0f));
+	//m_defaultMaterial->SetUniformValue("EnvironmentTexture", m_skyboxTexture);
+	////m_defaultMaterial->SetUniformValue("EnvironmentMaxLod", maxLod);
+	//m_defaultMaterial->SetUniformValue("Color", glm::vec3(1.0f));
 
-	// Configure loader
-	ModelLoader loader(m_defaultMaterial);
+	//// Configure loader
+	//ModelLoader loader(m_defaultMaterial);
 
-	// Create a new material copy for each submaterial
-	loader.SetCreateMaterials(true);
+	//// Create a new material copy for each submaterial
+	//loader.SetCreateMaterials(true);
 
-	// Flip vertically textures loaded by the model loader
-	loader.GetTexture2DLoader().SetFlipVertical(true);
-	// Link vertex properties to attributes
-	loader.SetMaterialAttribute(VertexAttribute::Semantic::Position, "VertexPosition");
-	loader.SetMaterialAttribute(VertexAttribute::Semantic::Normal, "VertexNormal");
-	loader.SetMaterialAttribute(VertexAttribute::Semantic::Tangent, "VertexTangent");
-	loader.SetMaterialAttribute(VertexAttribute::Semantic::Bitangent, "VertexBitangent");
-	loader.SetMaterialAttribute(VertexAttribute::Semantic::TexCoord0, "VertexTexCoord");
+	//// Flip vertically textures loaded by the model loader
+	//loader.GetTexture2DLoader().SetFlipVertical(true);
+	//// Link vertex properties to attributes
+	//loader.SetMaterialAttribute(VertexAttribute::Semantic::Position, "VertexPosition");
+	//loader.SetMaterialAttribute(VertexAttribute::Semantic::Normal, "VertexNormal");
+	//loader.SetMaterialAttribute(VertexAttribute::Semantic::Tangent, "VertexTangent");
+	//loader.SetMaterialAttribute(VertexAttribute::Semantic::Bitangent, "VertexBitangent");
+	//loader.SetMaterialAttribute(VertexAttribute::Semantic::TexCoord0, "VertexTexCoord");
 
-	// Link material properties to uniforms
-	loader.SetMaterialProperty(ModelLoader::MaterialProperty::DiffuseColor, "Color");
-	loader.SetMaterialProperty(ModelLoader::MaterialProperty::DiffuseTexture, "ColorTexture");
-	loader.SetMaterialProperty(ModelLoader::MaterialProperty::NormalTexture, "NormalTexture");
-	loader.SetMaterialProperty(ModelLoader::MaterialProperty::SpecularTexture, "SpecularTexture");
+	//// Link material properties to uniforms
+	//loader.SetMaterialProperty(ModelLoader::MaterialProperty::DiffuseColor, "Color");
+	//loader.SetMaterialProperty(ModelLoader::MaterialProperty::DiffuseTexture, "ColorTexture");
+	//loader.SetMaterialProperty(ModelLoader::MaterialProperty::NormalTexture, "NormalTexture");
+	//loader.SetMaterialProperty(ModelLoader::MaterialProperty::SpecularTexture, "SpecularTexture");
 
 
-	std::shared_ptr<Model> campfireModel = loader.LoadShared("models/campfire2/source/campfire.obj");
-	m_scene.AddSceneNode(std::make_shared<SceneModel>("campfire", campfireModel));
+	//std::shared_ptr<Model> campfireModel = loader.LoadShared("models/campfire2/source/campfire.obj");
+	//m_scene.AddSceneNode(std::make_shared<SceneModel>("campfire", campfireModel));
 }
 
 void FireApplication::InitializeRenderer()
 {
 	std::cout << "InitializeRenderer" << std::endl;
-	m_renderer.AddRenderPass(std::make_unique<ForwardRenderPass>());
-	m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
+	//m_renderer.AddRenderPass(std::make_unique<ForwardRenderPass>());
+	//m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
 }
 void FireApplication::RenderGUI()
 {
