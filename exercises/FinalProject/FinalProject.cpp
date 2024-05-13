@@ -1,12 +1,14 @@
 #include "FinalProject.h"
 
 #include <ituGL/asset/ShaderLoader.h>
+#include <ituGL/texture/Texture2DObject.h>
 #include <ituGL/asset/ModelLoader.h>
 #include <ituGL/asset/Texture2DLoader.h>
 #include <ituGL/shader/Material.h>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/transform.hpp>
 #include <iostream>
+#include <stb_image.h>
 #include <imgui.h>
 #include <array>
 #include <fstream>
@@ -57,6 +59,8 @@ void FinalProject::Initialize()
 	std::cout << "Initialize" << std::endl;
 	Application::Initialize();
 	m_imGui.Initialize(GetMainWindow());
+
+
 	InitializeModel();
 	InitializeCamera();
 	InitializeLights();
@@ -66,7 +70,7 @@ void FinalProject::Initialize()
 	GetDevice().EnableFeature(GL_DEPTH_TEST);
 	GetDevice().EnableFeature(GL_PROGRAM_POINT_SIZE);
 	GetDevice().EnableFeature(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	GetDevice().SetVSyncEnabled(true);
 }
 
@@ -82,11 +86,15 @@ void FinalProject::Render()
 	m_model.Draw();
 	m_shaderProgram.Use();
 	m_shaderProgram.SetUniform(m_currentTimeUniform, GetCurrentTime());
-
+	glActiveTexture(GL_TEXTURE0);  // Activate texture unit 0
+	m_particleTexture->Bind();  // Bind the particle texture
+	m_particleMaterial->Use();
+	ShaderProgram& shaderProgram = *m_particleMaterial->GetShaderProgram();
 	m_vao.Bind();
 	glDrawArrays(GL_POINTS, 0, std::min(m_particleCount, m_particleCapacity));
 	RenderGUI();
 	Application::Render();
+	m_particleTexture->Unbind();
 }
 
 void FinalProject::Cleanup()
@@ -150,6 +158,54 @@ void FinalProject::InitializeModel()
 	m_model.GetMaterial(0).SetUniformValue("ColorTexture", textureLoader.LoadShared("models/campfire2/source/campfire.png"));
 }
 
+
+std::shared_ptr<Texture2DObject> FinalProject::CreateDefaultTexture()
+{
+	std::shared_ptr<Texture2DObject> texture = std::make_shared<Texture2DObject>();
+	int width = 4;
+	int height = 4;
+	std::vector<float> pixels;
+	for (int j = 0; j < height; ++j)
+	{
+		for (int i = 0; i < width; ++i)
+		{
+			// Pink color with full opacity
+			pixels.push_back(1.0f); // R
+			pixels.push_back(0.0f); // G
+			pixels.push_back(1.0f); // B
+			pixels.push_back(1.0f); // A
+		}
+	}
+
+	texture->Bind();
+	texture->SetImage<float>(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, pixels);
+	texture->GenerateMipmap();
+	texture->Unbind(); // Ensure to unbind after operations
+
+	return texture;
+}
+
+std::shared_ptr<Texture2DObject> FinalProject::LoadTexture(const char* path)
+{
+	std::shared_ptr<Texture2DObject> texture = std::make_shared<Texture2DObject>();
+	int width = 0, height = 0, components = 0;
+	unsigned char* data = stbi_load(path, &width, &height, &components, 4); // Load with 4 channels
+
+	if (data) {
+		texture->Bind();
+		texture->SetImage<unsigned char>(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
+		texture->GenerateMipmap();
+		stbi_image_free(data);
+		texture->Unbind();
+	}
+	else {
+		// Handle the error in case the file could not be loaded
+		std::cerr << "Failed to load texture: " << path << std::endl;
+	}
+
+	return texture;
+}
+
 void FinalProject::InitializeCamera()
 {
 	std::cout << "InitializeCamera" << std::endl;
@@ -211,17 +267,18 @@ void FinalProject::InitializeGeometry()
 
 void FinalProject::InitializeShaders()
 {
-	Shader vertexShader(Shader::VertexShader);
-	LoadAndCompileShader(vertexShader, "shaders/particles.vert");
+	Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/particles.vert");
+	Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/particles.frag");
+	std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
+	shaderProgram->Build(vertexShader, fragmentShader);
 
-	Shader fragmentShader(Shader::FragmentShader);
-	LoadAndCompileShader(fragmentShader, "shaders/particles.frag");
+	// Assuming Material needs a pointer to a ShaderProgram
+	m_particleMaterial = std::make_shared<Material>(shaderProgram);
 
-	if (!m_shaderProgram.Build(vertexShader, fragmentShader))
-	{
-		std::cout << "Error linking shaders" << std::endl;
-	}
-	m_currentTimeUniform = m_shaderProgram.GetUniformLocation("CurrentTime");
+	m_currentTimeUniform = shaderProgram->GetUniformLocation("CurrentTime");
+
+	// Assuming shader program setup requires setup functions or further initialization
+	m_particleMaterial->SetUniformValue("TextureSampler", 0);
 }
 
 void FinalProject::EmitParticle()

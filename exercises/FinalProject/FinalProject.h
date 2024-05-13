@@ -39,6 +39,12 @@ private:
 	static Color RandomColor();
 
 private:
+	std::shared_ptr<Texture2DObject> m_defaultTexture;
+	std::shared_ptr<Texture2DObject> m_particleTexture;
+
+	std::shared_ptr<Texture2DObject> CreateDefaultTexture();
+	std::shared_ptr<Texture2DObject> LoadTexture(const char* filePath);
+
 	DearImGui m_imGui;
 
 	glm::vec2 m_mousePosition;
