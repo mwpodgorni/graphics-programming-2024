@@ -13,7 +13,6 @@
 #include <sstream>
 #include <iostream>
 
-// Structure defining that Particle data
 struct Particle
 {
 	glm::vec2 position;
@@ -25,7 +24,6 @@ struct Particle
 	glm::vec2 uv;
 };
 
-// List of attributes of the particle. Must match the structure above
 const std::array<VertexAttribute, 7> s_vertexAttributes =
 {
 	VertexAttribute(Data::Type::Float, 2), // position
@@ -49,9 +47,8 @@ FinalProject::FinalProject()
 	, m_lightIntensity(0.0f)
 	, m_lightPosition(0.0f)
 	, m_currentTimeUniform(0)
-	, m_gravityUniform(0)
 	, m_particleCount(0)
-	, m_particleCapacity(5000)  // You can change the capacity here to have more particles
+	, m_particleCapacity(5000)
 {
 }
 
@@ -63,64 +60,31 @@ void FinalProject::Initialize()
 	InitializeModel();
 	InitializeCamera();
 	InitializeLights();
-
 	InitializeGeometry();
 	InitializeShaders();
 
-	DeviceGL& device = GetDevice();
 	GetDevice().EnableFeature(GL_DEPTH_TEST);
-
-
-	// Enable GL_PROGRAM_POINT_SIZE to have variable point size per-particle
 	GetDevice().EnableFeature(GL_PROGRAM_POINT_SIZE);
-
-	// Enable GL_BLEND to have blending on the particles, and configure it as additive blending
 	GetDevice().EnableFeature(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-	// We need to enable V-sync, otherwise the framerate would be too high and spawn multiple particles in one click
 	GetDevice().SetVSyncEnabled(true);
-
-	// Get "CurrentTime" uniform location in the shader program
-	m_currentTimeUniform = m_shaderProgram.GetUniformLocation("CurrentTime");
-
-	// Get "Gravity" uniform location in the shader program
-	m_gravityUniform = m_shaderProgram.GetUniformLocation("Gravity");
-	m_textureUniform = m_shaderProgram.GetUniformLocation("FireTexture");
 }
 
 void FinalProject::Update()
 {
 	Application::Update();
-	UpdateCamera();
-	const Window& window = GetMainWindow();
-
 	EmitParticle();
-
 }
 
 void FinalProject::Render()
 {
-	//std::cout << "Render" << std::endl;
-
-	// Clear color and depth
 	GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
-
 	m_model.Draw();
-	// Set our particles shader program
 	m_shaderProgram.Use();
-
-	// Set CurrentTime uniform
 	m_shaderProgram.SetUniform(m_currentTimeUniform, GetCurrentTime());
 
-	// Set Gravity uniform
-	m_shaderProgram.SetUniform(m_gravityUniform, 0.0f);
-
-	// Bind the particle system VAO
 	m_vao.Bind();
-	// Draw points. The amount of points can't exceed the capacity
 	glDrawArrays(GL_POINTS, 0, std::min(m_particleCount, m_particleCapacity));
-	// Render the debug user interface
 	RenderGUI();
 	Application::Render();
 }
@@ -136,20 +100,17 @@ void FinalProject::Cleanup()
 
 void FinalProject::InitializeModel()
 {
-	// Load and build shader
 	Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/blinn-phong.vert");
 	Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/blinn-phong.frag");
 	std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
 	shaderProgram->Build(vertexShader, fragmentShader);
 
-	// Filter out uniforms that are not material properties
 	ShaderUniformCollection::NameSet filteredUniforms;
 	filteredUniforms.insert("WorldMatrix");
 	filteredUniforms.insert("ViewProjMatrix");
 	filteredUniforms.insert("AmbientColor");
 	filteredUniforms.insert("LightColor");
 
-	// Create reference material
 	std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgram, filteredUniforms);
 	material->SetUniformValue("Color", glm::vec4(1.0f));
 	material->SetUniformValue("AmbientReflection", 1.0f);
@@ -157,7 +118,6 @@ void FinalProject::InitializeModel()
 	material->SetUniformValue("SpecularReflection", 1.0f);
 	material->SetUniformValue("SpecularExponent", 100.0f);
 
-	// Setup function
 	ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
 	ShaderProgram::Location viewProjMatrixLocation = shaderProgram->GetUniformLocation("ViewProjMatrix");
 	ShaderProgram::Location ambientColorLocation = shaderProgram->GetUniformLocation("AmbientColor");
@@ -170,14 +130,12 @@ void FinalProject::InitializeModel()
 			shaderProgram.SetUniform(worldMatrixLocation, modelMatrix);
 			shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
 
-			// Set camera and light uniforms
 			shaderProgram.SetUniform(ambientColorLocation, m_ambientColor);
 			shaderProgram.SetUniform(lightColorLocation, m_lightColor * m_lightIntensity);
 			shaderProgram.SetUniform(lightPositionLocation, m_lightPosition);
 			shaderProgram.SetUniform(cameraPositionLocation, m_cameraPosition);
 		});
 
-	// Configure loader
 	ModelLoader loader(material);
 	loader.SetCreateMaterials(true);
 	loader.SetMaterialAttribute(VertexAttribute::Semantic::Position, "VertexPosition");
@@ -187,7 +145,6 @@ void FinalProject::InitializeModel()
 	// Load model
 	m_model = loader.Load("models/campfire2/source/campfire.obj");
 
-	// Load and set textures
 	Texture2DLoader textureLoader(TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
 	textureLoader.SetFlipVertical(true);
 	m_model.GetMaterial(0).SetUniformValue("ColorTexture", textureLoader.LoadShared("models/campfire2/source/campfire.png"));
@@ -231,87 +188,14 @@ void FinalProject::RenderGUI()
 	m_imGui.EndFrame();
 }
 
-void FinalProject::UpdateCamera()
-{
-	std::cout << "UpdateCamera" << std::endl;
-	Window& window = GetMainWindow();
-
-	// Update if camera is enabled (controlled by SPACE key)
-	{
-		bool enablePressed = window.IsKeyPressed(GLFW_KEY_SPACE);
-		if (enablePressed && !m_cameraEnablePressed)
-		{
-			m_cameraEnabled = !m_cameraEnabled;
-
-			window.SetMouseVisible(!m_cameraEnabled);
-			m_mousePosition = window.GetMousePosition(true);
-		}
-		m_cameraEnablePressed = enablePressed;
-	}
-
-	if (!m_cameraEnabled)
-		return;
-
-	glm::mat4 viewTransposedMatrix = glm::transpose(m_camera.GetViewMatrix());
-	glm::vec3 viewRight = viewTransposedMatrix[0];
-	glm::vec3 viewForward = -viewTransposedMatrix[2];
-
-	// Update camera translation
-	{
-		glm::vec2 inputTranslation(0.0f);
-
-		if (window.IsKeyPressed(GLFW_KEY_A))
-			inputTranslation.x = -1.0f;
-		else if (window.IsKeyPressed(GLFW_KEY_D))
-			inputTranslation.x = 1.0f;
-
-		if (window.IsKeyPressed(GLFW_KEY_W))
-			inputTranslation.y = 1.0f;
-		else if (window.IsKeyPressed(GLFW_KEY_S))
-			inputTranslation.y = -1.0f;
-
-		inputTranslation *= m_cameraTranslationSpeed;
-		inputTranslation *= GetDeltaTime();
-
-		// Double speed if SHIFT is pressed
-		if (window.IsKeyPressed(GLFW_KEY_LEFT_SHIFT))
-			inputTranslation *= 2.0f;
-
-		m_cameraPosition += inputTranslation.x * viewRight + inputTranslation.y * viewForward;
-	}
-
-	// Update camera rotation
-	{
-		glm::vec2 mousePosition = window.GetMousePosition(true);
-		glm::vec2 deltaMousePosition = mousePosition - m_mousePosition;
-		m_mousePosition = mousePosition;
-
-		glm::vec3 inputRotation(-deltaMousePosition.x, deltaMousePosition.y, 0.0f);
-
-		inputRotation *= m_cameraRotationSpeed;
-
-		viewForward = glm::rotate(inputRotation.x, glm::vec3(0, 1, 0)) * glm::rotate(inputRotation.y, glm::vec3(viewRight)) * glm::vec4(viewForward, 0);
-	}
-
-	// Update view matrix
-	std::cout << m_cameraPosition.x << ", " << m_cameraPosition.y << ", " << m_cameraPosition.z << std::endl;
-	m_camera.SetViewMatrix(m_cameraPosition, m_cameraPosition + viewForward);
-}
-
-// Nothing to do in this method for this exercise.
-// Change s_vertexAttributes and the Particle struct to add new vertex attributes
 void FinalProject::InitializeGeometry()
 {
 	m_vbo.Bind();
 
-	// Allocate enough data for all the particles
-	// Notice the DynamicDraw usage, because we will update the buffer every time we emit a particle
 	m_vbo.AllocateData(m_particleCapacity * sizeof(Particle), BufferObject::Usage::DynamicDraw);
 
 	m_vao.Bind();
 
-	// Automatically iterate through the vertex attributes, and set the pointer
-	// We use interleaved attributes, so the offset is local to the particle, and the stride is the size of the particle
 	GLsizei stride = sizeof(Particle);
 	GLint offset = 0;
 	GLuint location = 0;
@@ -321,27 +205,23 @@ void FinalProject::InitializeGeometry()
 		offset += attribute.GetSize();
 	}
 
-	// Unbind VAO and VBO
 	VertexArrayObject::Unbind();
 	VertexBufferObject::Unbind();
 }
 
-// Load, compile and Build shaders
 void FinalProject::InitializeShaders()
 {
-	// Load and compile vertex shader
 	Shader vertexShader(Shader::VertexShader);
 	LoadAndCompileShader(vertexShader, "shaders/particles.vert");
 
-	// Load and compile fragment shader
 	Shader fragmentShader(Shader::FragmentShader);
 	LoadAndCompileShader(fragmentShader, "shaders/particles.frag");
 
-	// Attach shaders and link
 	if (!m_shaderProgram.Build(vertexShader, fragmentShader))
 	{
 		std::cout << "Error linking shaders" << std::endl;
 	}
+	m_currentTimeUniform = m_shaderProgram.GetUniformLocation("CurrentTime");
 }
 
 void FinalProject::EmitParticle()
@@ -350,7 +230,6 @@ void FinalProject::EmitParticle()
 	float duration = RandomRange(1.0f, 2.0f);
 	Color color = RandomColor();
 	float xOffset = RandomRange(-0.1f, 0.1f);
-	// Initialize the particle
 	Particle particle;
 	particle.position = glm::vec2(-0.02f + xOffset, -0.45f);
 	particle.size = size;
@@ -360,20 +239,15 @@ void FinalProject::EmitParticle()
 	particle.velocity = RandomDirection() * RandomRange(0.5f, 2.0f);
 	particle.uv = glm::vec2(0.0f, 0.0f);
 	std::cout << "EmitParticle" << particle.position.x << std::endl;
-	// Get the index in the circular buffer
 	unsigned int particleIndex = m_particleCount % m_particleCapacity;
 
-	// Bind the VBO before updating data
 	m_vbo.Bind();
 
-	// Update the particle data in the VBO
 	int offset = particleIndex * sizeof(Particle);
 	m_vbo.UpdateData(std::span(&particle, 1), offset);
 
-	// Unbind the VBO
 	VertexBufferObject::Unbind();
 
-	// Increment the particle count
 	m_particleCount++;
 }
 

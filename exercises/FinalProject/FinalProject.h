@@ -26,39 +26,23 @@ private:
 	void InitializeCamera();
 	void InitializeLights();
 
-	void UpdateCamera();
-
 	void RenderGUI();
 
-
-
-
-	// Initialize the VBO and VAO
 	void InitializeGeometry();
-
-	// Load, compile and link shaders
 	void InitializeShaders();
-
-	// Helper function to encapsulate loading and compiling a shader
 	void LoadAndCompileShader(Shader& shader, const char* path);
-
-	// Emit a new particle
 	void EmitParticle();
 
-	// Helper methods for random values
 	static float Random01();
 	static float RandomRange(float from, float to);
 	static glm::vec2 RandomDirection();
 	static Color RandomColor();
 
 private:
-	// Helper object for debug GUI
 	DearImGui m_imGui;
 
-	// Mouse position for camera controller
 	glm::vec2 m_mousePosition;
 
-	// Camera controller parameters
 	Camera m_camera;
 	glm::vec3 m_cameraPosition;
 	float m_cameraTranslationSpeed;
@@ -66,37 +50,19 @@ private:
 	bool m_cameraEnabled;
 	bool m_cameraEnablePressed;
 
-	// Loaded model
 	Model m_model;
 
-	// Add light variables
 	glm::vec3 m_ambientColor;
 	glm::vec3 m_lightColor;
 	float m_lightIntensity;
 	glm::vec3 m_lightPosition;
 
-
-	// All particles stored in a single VBO with interleaved attributes
 	VertexBufferObject m_vbo;
-
-	// VAO that represents the particle system
 	VertexArrayObject m_vao;
-
-	// Particles shader program
 	ShaderProgram m_shaderProgram;
-
-	// Location of the "CurrentTime" uniform
 	ShaderProgram::Location m_currentTimeUniform;
-
-	// Location of the "Gravity" uniform
-	ShaderProgram::Location m_gravityUniform;
-	ShaderProgram::Location m_textureUniform;
 	std::shared_ptr<Material> m_particleMaterial;
 
-
-	// Total number of particles created
 	unsigned int m_particleCount;
-
-	// Max number of particles that can exist at the same time
 	const unsigned int m_particleCapacity;
 };

@@ -10,7 +10,6 @@ layout (location = 5) in vec2 ParticleVelocity;
 out vec4 Color;
 
 uniform float CurrentTime;
-uniform float Gravity;
 
 void main()
 {
@@ -38,7 +37,7 @@ void main()
     }
     
     position += velocity * age;
-    position += 0.5 * vec2(0, Gravity) * age * age;
+    position += 0.5 * vec2(0, 0) * age * age;
     gl_Position = vec4(position, -1.0, 1);
 
     float t = clamp(age / ParticleDuration, 0.0, 1.0);
