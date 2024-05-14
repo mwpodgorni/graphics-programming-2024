@@ -40,8 +40,9 @@ private:
 	void UpdateCamera();
 private:
 	DearImGui m_imGui;
-
+	GLuint m_textureID;
 	glm::vec2 m_mousePosition;
+	Model m_model;
 
 	Camera m_camera;
 	glm::vec3 m_cameraPosition;
@@ -49,8 +50,6 @@ private:
 	float m_cameraRotationSpeed;
 	bool m_cameraEnabled;
 	bool m_cameraEnablePressed;
-
-	Model m_model;
 
 	glm::vec3 m_ambientColor;
 	glm::vec3 m_lightColor;
@@ -61,13 +60,15 @@ private:
 	VertexArrayObject m_vao;
 	ShaderProgram m_shaderProgram;
 	ShaderProgram::Location m_currentTimeUniform;
-	std::shared_ptr<Material> m_particleMaterial;
-	GLuint m_textureID;
+	ShaderProgram::Location m_viewProjMatrixUniform;
 
 	unsigned int m_particleCount;
 	const unsigned int m_particleCapacity;
-	float yPos = 0.2f;
-	float xPos = 0.0f;
-	float zPos = 0.0f;
-	ShaderProgram::Location m_viewProjMatrixUniform;
+
+	// Adjustable variables
+	glm::vec3 aStartingPosition = glm::vec3(0.0f, 0.2f, 0.0f);
+	glm::vec2 aSize = glm::vec2(30.0f, 70.0f);
+	glm::vec2 aDuration = glm::vec2(1.0f, 2.5f);
+	glm::vec2 aSpawnRange = glm::vec2(-0.4f, 0.4f);
+	glm::vec2 aVelocityRange = glm::vec2(0.0f, 0.3f);
 };

@@ -55,7 +55,6 @@ FinalProject::FinalProject()
 
 void FinalProject::Initialize()
 {
-	std::cout << "Initialize" << std::endl;
 	Application::Initialize();
 	m_imGui.Initialize(GetMainWindow());
 	InitializeModel();
@@ -190,10 +189,7 @@ void FinalProject::Render()
 
 void FinalProject::Cleanup()
 {
-	std::cout << "Cleanup" << std::endl;
-	// Cleanup DearImGUI
 	m_imGui.Cleanup();
-
 	Application::Cleanup();
 }
 void FinalProject::LoadTexture(const char* filePath)
@@ -261,7 +257,6 @@ void FinalProject::InitializeModel()
 	loader.SetMaterialAttribute(VertexAttribute::Semantic::Normal, "VertexNormal");
 	loader.SetMaterialAttribute(VertexAttribute::Semantic::TexCoord0, "VertexTexCoord");
 
-	// Load model
 	m_model = loader.Load("models/campfire2/source/campfire.obj");
 
 	Texture2DLoader textureLoader(TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
@@ -271,20 +266,13 @@ void FinalProject::InitializeModel()
 
 void FinalProject::InitializeCamera()
 {
-	std::cout << "InitializeCamera" << std::endl;
-	// Set view matrix, from the camera position looking to the origin
 	m_camera.SetViewMatrix(m_cameraPosition, glm::vec3(0.0f));
-
-	// Set perspective matrix
 	float aspectRatio = GetMainWindow().GetAspectRatio();
 	m_camera.SetPerspectiveProjectionMatrix(1.0f, aspectRatio, 0.1f, 1000.0f);
-
 }
 
 void FinalProject::InitializeLights()
 {
-	std::cout << "InitializeLights" << std::endl;
-	// Initialize light variables
 	m_ambientColor = glm::vec3(0.25f);
 	m_lightColor = glm::vec3(1.0f);
 	m_lightIntensity = 1.0f;
@@ -293,23 +281,14 @@ void FinalProject::InitializeLights()
 
 void FinalProject::RenderGUI()
 {
-	//std::cout << "RenderGUI" << std::endl;
 	m_imGui.BeginFrame();
-
-	// Add debug controls for light properties
-	ImGui::ColorEdit3("Ambient color", &m_ambientColor[0]);
-	ImGui::Separator();
-	ImGui::DragFloat3("Light position", &m_lightPosition[0], 0.1f);
-	ImGui::ColorEdit3("Light color", &m_lightColor[0]);
-	ImGui::DragFloat("Light intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
-	ImGui::DragFloat("xPos", &xPos, 0.0f, -10.0f, 10.0f);
-	ImGui::DragFloat("yPos", &yPos, 0.0f, -10.0f, 10.0f);
-	ImGui::DragFloat("zPos", &zPos, 0.0f, -10.0f, 10.0f);
-	ImGui::Separator();
-
+	ImGui::DragFloat3("Starting Position", &aStartingPosition[0], 0.1f, -10.0f, 10.0f);
+	ImGui::DragFloat2("Size", &aSize[0], 0.1f, 0.0f, 100.0f);
+	ImGui::DragFloat2("Duration", &aDuration[0], 0.1f, 0.0f, 10.0f);
+	ImGui::DragFloat2("Spawn range", &aSpawnRange[0], 0.01f, -1.0f, 1.0f);
+	ImGui::DragFloat2("Velocity range", &aVelocityRange[0], 0.01f, -1.0f, 10.0f);
 	m_imGui.EndFrame();
 }
-
 void FinalProject::InitializeGeometry()
 {
 	m_vbo.Bind();
@@ -349,56 +328,45 @@ void FinalProject::InitializeShaders()
 
 void FinalProject::EmitParticle()
 {
-	float size = RandomRange(30.0f, 70.0f);
-	float duration = RandomRange(1.0f, 3.0f);
-	Color color = RandomColor();
-	float xOffset = RandomRange(-0.35f, 0.35f);
-	float zOffset = RandomRange(-0.35f, 0.35f);
 	Particle particle;
-	particle.position = glm::vec3(xOffset+xPos, yPos, zOffset+zPos);
+
+	float xOffset = RandomRange(aSpawnRange.x, aSpawnRange.y);
+	float zOffset = RandomRange(aSpawnRange.x, aSpawnRange.y);
+	particle.position = glm::vec3(xOffset + aStartingPosition.x, aStartingPosition.y, zOffset + aStartingPosition.z);
+
+	float size = RandomRange(aSize.x, aSize.y);
 	particle.size = size;
+
+	float duration = RandomRange(aDuration.x, aDuration.y);
 	particle.birth = GetCurrentTime();
 	particle.duration = duration;
-	particle.color = color;
-	particle.velocity = RandomDirection() * RandomRange(0.5f, 5.0f);
-	particle.velocity.y = abs(particle.velocity.y) + 0.5f; // Ensure upward movement
+
+	particle.velocity = RandomDirection() * RandomRange(aVelocityRange.x, aVelocityRange.y);
+	particle.velocity.y = abs(particle.velocity.y) + 0.5f;
 	particle.uv = glm::vec2(0.0f, 0.0f);
-	std::cout << "EmitParticle Position: (" << particle.position.x << ", " << particle.position.y << ", " << particle.position.z << ")" << std::endl;
 
 	unsigned int particleIndex = m_particleCount % m_particleCapacity;
-
 	m_vbo.Bind();
-
 	int offset = particleIndex * sizeof(Particle);
 	m_vbo.UpdateData(std::span(&particle, 1), offset);
-
 	VertexBufferObject::Unbind();
-
 	m_particleCount++;
 }
 
 void FinalProject::LoadAndCompileShader(Shader& shader, const char* path)
 {
-	// Open the file for reading
 	std::ifstream file(path);
 	if (!file.is_open())
 	{
 		std::cout << "Can't find file: " << path << std::endl;
-		std::cout << "Is your working directory properly set?" << std::endl;
 		return;
 	}
 
-	// Dump the contents into a string
 	std::stringstream stringStream;
 	stringStream << file.rdbuf() << '\0';
-
-	// Set the source code from the string
 	shader.SetSource(stringStream.str().c_str());
-
-	// Try to compile
 	if (!shader.Compile())
 	{
-		// Get errors in case of failure
 		std::array<char, 256> errors;
 		shader.GetCompilationErrors(errors);
 		std::cout << "Error compiling shader: " << path << std::endl;

@@ -10,15 +10,15 @@ layout (location = 5) in vec2 ParticleVelocity;
 out vec4 Color;
 
 uniform float CurrentTime;
-uniform mat4 ViewProjMatrix; // View-Projection Matrix
-uniform mat4 ModelMatrix;    // Model Matrix
+uniform mat4 ViewProjMatrix;
+uniform mat4 ModelMatrix;
 
 void main()
 {
     float age = CurrentTime - ParticleBirth;
     gl_PointSize = age < ParticleDuration ? ParticleSize : 0;
 
-    float initialVelocity = 0.2;
+    float initialVelocity = ParticleVelocity.y;
     float acceleration = 0.05;
     float fadingSpeed = 0.005;
 
@@ -27,7 +27,7 @@ void main()
     // Combine horizontal velocity from ParticleVelocity and a vertical component
     vec3 velocity = vec3(0, initialVelocity + acceleration * velocityFactor, 0);
     velocity.y += initialVelocity + acceleration * velocityFactor - fadingSpeed * (ParticleDuration - age);
-
+    velocity.y /=1.8;
     vec3 position = ParticlePosition;
     
     // Adjust x and z positions to move towards the center (0, 0)
@@ -52,7 +52,7 @@ void main()
     gl_Position = ViewProjMatrix * worldPosition;
 
     float t = clamp(age / ParticleDuration, 0.0, 1.0);
-    Color = mix(vec4(1.0, 1.0, 0.0, 1.0), vec4(1.0, 0.5, 0.0, 1.0), smoothstep(0.0, 0.333, t));
-    Color = mix(Color, vec4(1.0, 0.5, 0.0, 1.0), smoothstep(0.333, 0.666, t));
-    Color = mix(Color, vec4(0.0, 0.0, 0.0, 1.0), smoothstep(0.666, 1.0, t));
+    Color = mix(vec4(1.0, 1.0, 0.0, 1.0), vec4(1.0, 0.5, 0.0, 1.0), smoothstep(0.0, 0.3, t));
+    Color = mix(Color, vec4(1.0, 0.5, 0.0, 1.0), smoothstep(0.3, 0.5, t));
+    Color = mix(Color, vec4(0.0, 0.0, 0.0, 1.0), smoothstep(0.5, 1.0, t));
 }
