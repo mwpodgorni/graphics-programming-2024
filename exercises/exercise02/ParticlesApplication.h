@@ -27,7 +27,7 @@ private:
 
     // Emit a new particle
     void EmitParticle(const glm::vec2& position, float size, float duration, const Color& color, const glm::vec2& velocity);
-
+    void LoadTexture(const char* filePath);
     // Helper methods for random values
     static float Random01();
     static float RandomRange(float from, float to);
@@ -37,7 +37,7 @@ private:
 private:
     // All particles stored in a single VBO with interleaved attributes
     VertexBufferObject m_vbo;
-
+    GLuint m_textureID;
     // VAO that represents the particle system
     VertexArrayObject m_vao;
 

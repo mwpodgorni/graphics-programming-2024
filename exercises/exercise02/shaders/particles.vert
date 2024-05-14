@@ -14,15 +14,15 @@ uniform float Gravity;
 
 void main()
 {
-	Color = ParticleColor;
-	float age = CurrentTime - ParticleBirth;
-	gl_PointSize = age < ParticleDuration ? ParticleSize : 0;
+    Color = ParticleColor;
+    float age = CurrentTime - ParticleBirth;
+    gl_PointSize = age < ParticleDuration ? ParticleSize : 0;
 
-	// initial position (x0)
-	vec2 position = ParticlePosition;
-	// add velocity: initial velocity (v0) * age
-	position += ParticleVelocity * age;
-	// add gravity: 1/2  gravity (a) * age^2
-	position += 0.5f * vec2(0, Gravity) * age * age;
-	gl_Position = vec4(position, 0.0, 1.0);
+    // initial position (x0)
+    vec2 position = ParticlePosition;
+    // add velocity: initial velocity (v0) * age
+    position += ParticleVelocity * age;
+    // add gravity: 1/2  gravity (a) * age^2
+    position += 0.5f * vec2(0, Gravity) * age * age;
+    gl_Position = vec4(position, 0.0, 1.0);
 }

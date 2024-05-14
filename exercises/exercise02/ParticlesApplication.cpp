@@ -7,7 +7,8 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
-
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 // Structure defining that Particle data
 struct Particle
 {
@@ -49,6 +50,7 @@ void ParticlesApplication::Initialize()
 
     // Initialize the mouse position with the current position of the mouse
     m_mousePosition = GetMainWindow().GetMousePosition(true);
+    LoadTexture("textures/0049.png");
 
     // Enable GL_PROGRAM_POINT_SIZE to have variable point size per-particle
     GetDevice().EnableFeature(GL_PROGRAM_POINT_SIZE);
@@ -72,20 +74,16 @@ void ParticlesApplication::Update()
     Application::Update();
 
     const Window& window = GetMainWindow();
-
     // Get the mouse position this frame
     glm::vec2 mousePosition = window.GetMousePosition(true);
 
     // Emit particles while the left button is pressed
-    if (window.IsMouseButtonPressed(Window::MouseButton::Left))
-    {
-        float size = RandomRange(10.0f, 30.0f);
-        float duration = RandomRange(1.0f, 2.0f);
-        Color color = RandomColor();
-        glm::vec2 velocity = 0.5f * (mousePosition - m_mousePosition) / GetDeltaTime();
+    float size = RandomRange(30.0f, 100.0f);
+    float duration = RandomRange(1.0f, 2.0f);
+    Color color = RandomColor();
+    glm::vec2 velocity = 0.5f * (mousePosition - m_mousePosition) / GetDeltaTime();
 
-        EmitParticle(mousePosition, size, duration, color, velocity);
-    }
+    EmitParticle(mousePosition, size, duration, color, velocity);
 
     // save the mouse position (to compare next frame and obtain velocity)
     m_mousePosition = mousePosition;
@@ -103,11 +101,17 @@ void ParticlesApplication::Render()
     m_shaderProgram.SetUniform(m_currentTimeUniform, GetCurrentTime());
 
     // Set Gravity uniform
-    m_shaderProgram.SetUniform(m_gravityUniform, -9.8f);
+    m_shaderProgram.SetUniform(m_gravityUniform, 0.8f);
 
     // Bind the particle system VAO
     m_vao.Bind();
+    // Bind the texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_textureID);
 
+    // Set the texture uniform
+    GLint textureLocation = m_shaderProgram.GetUniformLocation("particleTexture");
+    glUniform1i(textureLocation, 0); // Texture unit 0
     // Draw points. The amount of points can't exceed the capacity
     glDrawArrays(GL_POINTS, 0, std::min(m_particleCount, m_particleCapacity));
 
@@ -216,7 +220,27 @@ void ParticlesApplication::LoadAndCompileShader(Shader& shader, const char* path
         std::cout << errors.data() << std::endl;
     }
 }
-
+void ParticlesApplication::LoadTexture(const char* filePath)
+{
+    int width, height, channels;
+    unsigned char* data = stbi_load(filePath, &width, &height, &channels, 4);
+    if (data)
+    {
+        glGenTextures(1, &m_textureID);
+        glBindTexture(GL_TEXTURE_2D, m_textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Failed to load texture" << std::endl;
+    }
+}
 float ParticlesApplication::Random01()
 {
     return static_cast<float>(rand()) / RAND_MAX;
