@@ -12,6 +12,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <stb_image.h>
 
 struct Particle
 {
@@ -63,7 +64,8 @@ void FinalProject::Initialize()
 	InitializeGeometry();
 	InitializeShaders();
 
-	GetDevice().EnableFeature(GL_DEPTH_TEST);
+	LoadTexture("textures/0049.png");
+	//GetDevice().EnableFeature(GL_DEPTH_TEST);
 	GetDevice().EnableFeature(GL_PROGRAM_POINT_SIZE);
 	GetDevice().EnableFeature(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -78,14 +80,52 @@ void FinalProject::Update()
 
 void FinalProject::Render()
 {
-	GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
+	// Clear the color and depth buffer
+	// This ensures the framebuffer is cleared before drawing anything
+	GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f), true, 1.0);
+
+	// Render the 3D model first
+	// Enable depth testing to correctly render the 3D model with proper depth handling
+	GetDevice().EnableFeature(GL_DEPTH_TEST);
+	// Disable blending to avoid any blending issues while rendering the model
+	GetDevice().DisableFeature(GL_BLEND);
+
+	// Assume m_model has its own method to set up its shader and draw itself
+	// This will draw the 3D model using its own shader program and settings
 	m_model.Draw();
+
+	// Render particles
+	// Disable depth testing as particles don't need depth handling
+	GetDevice().DisableFeature(GL_DEPTH_TEST);
+	// Enable blending to correctly blend the particles with the background
+	GetDevice().EnableFeature(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Set blending mode to additive blending
+
+	// Use the particle shader program
 	m_shaderProgram.Use();
+	// Set the current time uniform for the particle shader
 	m_shaderProgram.SetUniform(m_currentTimeUniform, GetCurrentTime());
 
+	// Bind the particle system VAO
 	m_vao.Bind();
+
+	// Bind the particle texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_textureID);
+
+	// Set the texture uniform in the shader to use texture unit 0
+	GLint textureLocation = m_shaderProgram.GetUniformLocation("particleTexture");
+	glUniform1i(textureLocation, 0);
+
+	// Draw the particles
 	glDrawArrays(GL_POINTS, 0, std::min(m_particleCount, m_particleCapacity));
+
+	// Unbind the texture and VAO to clean up the state
+	glBindTexture(GL_TEXTURE_2D, 0);
+	VertexArrayObject::Unbind();
 	RenderGUI();
+
+	// Ensure to call Application::Render() for any additional rendering steps
 	Application::Render();
 }
 
@@ -97,7 +137,27 @@ void FinalProject::Cleanup()
 
 	Application::Cleanup();
 }
-
+void FinalProject::LoadTexture(const char* filePath)
+{
+	int width, height, channels;
+	unsigned char* data = stbi_load(filePath, &width, &height, &channels, 4);
+	if (data)
+	{
+		glGenTextures(1, &m_textureID);
+		glBindTexture(GL_TEXTURE_2D, m_textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		stbi_image_free(data);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+}
 void FinalProject::InitializeModel()
 {
 	Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/blinn-phong.vert");

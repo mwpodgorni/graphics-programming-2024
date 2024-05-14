@@ -4,7 +4,11 @@ out vec4 FragColor;
 
 in vec4 Color;
 
+uniform sampler2D particleTexture;
+
 void main()
 {
-    FragColor = Color;
+    vec2 TexCoords = gl_PointCoord;
+    vec4 texColor = texture(particleTexture, TexCoords);
+    FragColor = vec4(Color.rgb, Color.a * texColor.a);
 }

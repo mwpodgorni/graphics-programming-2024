@@ -9,7 +9,6 @@
 #include <ituGL/utils/DearImGui.h>
 #include <ituGL/shader/Material.h>
 
-class Texture2DObject;
 class FinalProject : public Application
 {
 public:
@@ -32,6 +31,7 @@ private:
 	void InitializeShaders();
 	void LoadAndCompileShader(Shader& shader, const char* path);
 	void EmitParticle();
+	void LoadTexture(const char* filePath);
 
 	static float Random01();
 	static float RandomRange(float from, float to);
@@ -62,6 +62,7 @@ private:
 	ShaderProgram m_shaderProgram;
 	ShaderProgram::Location m_currentTimeUniform;
 	std::shared_ptr<Material> m_particleMaterial;
+	GLuint m_textureID;
 
 	unsigned int m_particleCount;
 	const unsigned int m_particleCapacity;
