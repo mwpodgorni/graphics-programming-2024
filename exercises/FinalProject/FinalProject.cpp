@@ -43,13 +43,8 @@ FinalProject::FinalProject()
 	, m_cameraEnabled(false)
 	, m_cameraEnablePressed(false)
 	, m_mousePosition(GetMainWindow().GetMousePosition(true))
-	, m_ambientColor(0.0f)
-	, m_lightColor(0.0f)
-	, m_lightIntensity(0.0f)
-	, m_lightPosition(0.0f)
 	, m_currentTimeUniform(0)
-{
-}
+{}
 
 void FinalProject::Initialize()
 {
