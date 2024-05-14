@@ -21,23 +21,20 @@ protected:
 	void Cleanup() override;
 
 private:
+	void LoadTexture(const char* filePath);
+	void LoadAndCompileShader(Shader& shader, const char* path);
 	void InitializeModel();
 	void InitializeCamera();
-	void InitializeLights();
-
-	void RenderGUI();
-
 	void InitializeGeometry();
 	void InitializeShaders();
-	void LoadAndCompileShader(Shader& shader, const char* path);
+	void RenderGUI();
 	void EmitParticle();
-	void LoadTexture(const char* filePath);
+	void UpdateCamera();
 
 	static float Random01();
 	static float RandomRange(float from, float to);
 	static glm::vec2 RandomDirection();
 	static Color RandomColor();
-	void UpdateCamera();
 private:
 	DearImGui m_imGui;
 	GLuint m_textureID;
@@ -51,10 +48,7 @@ private:
 	bool m_cameraEnabled;
 	bool m_cameraEnablePressed;
 
-	glm::vec3 m_ambientColor;
-	glm::vec3 m_lightColor;
-	float m_lightIntensity;
-	glm::vec3 m_lightPosition;
+
 
 	VertexBufferObject m_vbo;
 	VertexArrayObject m_vao;
@@ -62,8 +56,8 @@ private:
 	ShaderProgram::Location m_currentTimeUniform;
 	ShaderProgram::Location m_viewProjMatrixUniform;
 
-	unsigned int m_particleCount;
-	const unsigned int m_particleCapacity;
+	unsigned int m_particleCount = 0;
+	const unsigned int m_particleCapacity = 2000;
 
 	// Adjustable variables
 	glm::vec3 aStartingPosition = glm::vec3(0.0f, 0.2f, 0.0f);
@@ -71,4 +65,9 @@ private:
 	glm::vec2 aDuration = glm::vec2(1.0f, 2.5f);
 	glm::vec2 aSpawnRange = glm::vec2(-0.4f, 0.4f);
 	glm::vec2 aVelocityRange = glm::vec2(0.0f, 0.3f);
+
+	glm::vec3 m_ambientColor = glm::vec3(0.25f);
+	glm::vec3 m_lightColor = glm::vec3(1.0f);
+	float m_lightIntensity = 0.5f;
+	glm::vec3 m_lightPosition = glm::vec3(0.0f, 30.0f, 0.0f);
 };
