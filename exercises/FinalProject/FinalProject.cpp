@@ -44,6 +44,8 @@ FinalProject::FinalProject()
 	, m_cameraEnablePressed(false)
 	, m_mousePosition(GetMainWindow().GetMousePosition(true))
 	, m_currentTimeUniform(0)
+	, m_viewProjMatrixUniform(0)
+	, m_textureID(0)
 {}
 
 void FinalProject::Initialize()
