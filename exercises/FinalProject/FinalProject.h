@@ -37,7 +37,7 @@ private:
 	static float RandomRange(float from, float to);
 	static glm::vec2 RandomDirection();
 	static Color RandomColor();
-
+	void UpdateCamera();
 private:
 	DearImGui m_imGui;
 
@@ -66,4 +66,8 @@ private:
 
 	unsigned int m_particleCount;
 	const unsigned int m_particleCapacity;
+	float yPos = 0.2f;
+	float xPos = 0.0f;
+	float zPos = 0.0f;
+	ShaderProgram::Location m_viewProjMatrixUniform;
 };

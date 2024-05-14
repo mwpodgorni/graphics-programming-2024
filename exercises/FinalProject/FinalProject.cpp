@@ -16,7 +16,7 @@
 
 struct Particle
 {
-	glm::vec2 position;
+	glm::vec3 position;
 	float size;
 	float birth;
 	float duration;
@@ -27,7 +27,7 @@ struct Particle
 
 const std::array<VertexAttribute, 7> s_vertexAttributes =
 {
-	VertexAttribute(Data::Type::Float, 2), // position
+	VertexAttribute(Data::Type::Float, 3), // position
 	VertexAttribute(Data::Type::Float, 1), // size
 	VertexAttribute(Data::Type::Float, 1), // birth
 	VertexAttribute(Data::Type::Float, 1), // duration
@@ -49,7 +49,7 @@ FinalProject::FinalProject()
 	, m_lightPosition(0.0f)
 	, m_currentTimeUniform(0)
 	, m_particleCount(0)
-	, m_particleCapacity(5000)
+	, m_particleCapacity(2000)
 {
 }
 
@@ -65,7 +65,7 @@ void FinalProject::Initialize()
 	InitializeShaders();
 
 	LoadTexture("textures/0049.png");
-	//GetDevice().EnableFeature(GL_DEPTH_TEST);
+	GetDevice().EnableFeature(GL_DEPTH_TEST);
 	GetDevice().EnableFeature(GL_PROGRAM_POINT_SIZE);
 	GetDevice().EnableFeature(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -75,57 +75,116 @@ void FinalProject::Initialize()
 void FinalProject::Update()
 {
 	Application::Update();
+	UpdateCamera();
 	EmitParticle();
 }
+void FinalProject::UpdateCamera()
+{
+	Window& window = GetMainWindow();
 
+	// Update if camera is enabled (controlled by SPACE key)
+	{
+		bool enablePressed = window.IsKeyPressed(GLFW_KEY_SPACE);
+		if (enablePressed && !m_cameraEnablePressed)
+		{
+			m_cameraEnabled = !m_cameraEnabled;
+
+			window.SetMouseVisible(!m_cameraEnabled);
+			m_mousePosition = window.GetMousePosition(true);
+		}
+		m_cameraEnablePressed = enablePressed;
+	}
+
+	if (!m_cameraEnabled)
+		return;
+
+	glm::mat4 viewTransposedMatrix = glm::transpose(m_camera.GetViewMatrix());
+	glm::vec3 viewRight = viewTransposedMatrix[0];
+	glm::vec3 viewForward = -viewTransposedMatrix[2];
+
+	// Update camera translation
+	{
+		glm::vec2 inputTranslation(0.0f);
+
+		if (window.IsKeyPressed(GLFW_KEY_A))
+			inputTranslation.x = -1.0f;
+		else if (window.IsKeyPressed(GLFW_KEY_D))
+			inputTranslation.x = 1.0f;
+
+		if (window.IsKeyPressed(GLFW_KEY_W))
+			inputTranslation.y = 1.0f;
+		else if (window.IsKeyPressed(GLFW_KEY_S))
+			inputTranslation.y = -1.0f;
+
+		inputTranslation *= m_cameraTranslationSpeed;
+		inputTranslation *= GetDeltaTime();
+
+		// Double speed if SHIFT is pressed
+		if (window.IsKeyPressed(GLFW_KEY_LEFT_SHIFT))
+			inputTranslation *= 2.0f;
+
+		m_cameraPosition += inputTranslation.x * viewRight + inputTranslation.y * viewForward;
+	}
+
+	// Update camera rotation
+	{
+		glm::vec2 mousePosition = window.GetMousePosition(true);
+		glm::vec2 deltaMousePosition = mousePosition - m_mousePosition;
+		m_mousePosition = mousePosition;
+
+		glm::vec3 inputRotation(-deltaMousePosition.x, deltaMousePosition.y, 0.0f);
+
+		inputRotation *= m_cameraRotationSpeed;
+
+		viewForward = glm::rotate(inputRotation.x, glm::vec3(0, 1, 0)) * glm::rotate(inputRotation.y, glm::vec3(viewRight)) * glm::vec4(viewForward, 0);
+	}
+
+	// Update view matrix
+	m_camera.SetViewMatrix(m_cameraPosition, m_cameraPosition + viewForward);
+}
 void FinalProject::Render()
 {
 	// Clear the color and depth buffer
-	// This ensures the framebuffer is cleared before drawing anything
 	GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f), true, 1.0);
 
 	// Render the 3D model first
-	// Enable depth testing to correctly render the 3D model with proper depth handling
 	GetDevice().EnableFeature(GL_DEPTH_TEST);
-	// Disable blending to avoid any blending issues while rendering the model
 	GetDevice().DisableFeature(GL_BLEND);
 
-	// Assume m_model has its own method to set up its shader and draw itself
-	// This will draw the 3D model using its own shader program and settings
 	m_model.Draw();
 
 	// Render particles
-	// Disable depth testing as particles don't need depth handling
 	GetDevice().DisableFeature(GL_DEPTH_TEST);
-	// Enable blending to correctly blend the particles with the background
 	GetDevice().EnableFeature(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Set blending mode to additive blending
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
-	// Use the particle shader program
 	m_shaderProgram.Use();
-	// Set the current time uniform for the particle shader
 	m_shaderProgram.SetUniform(m_currentTimeUniform, GetCurrentTime());
 
-	// Bind the particle system VAO
+	// Set the view-projection matrix for the particles
+	glm::mat4 viewProjMatrix = m_camera.GetViewProjectionMatrix();
+	m_shaderProgram.SetUniform(m_viewProjMatrixUniform, viewProjMatrix);
+
+	// Set the model matrix for the particles
+	glm::mat4 modelMatrix = glm::translate(glm::vec3(0.0f, 0.0f, -5.0f)) * glm::scale(glm::vec3(0.1f));
+	GLint modelMatrixUniform = m_shaderProgram.GetUniformLocation("ModelMatrix");
+	m_shaderProgram.SetUniform(modelMatrixUniform, modelMatrix);
+
 	m_vao.Bind();
 
-	// Bind the particle texture
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_textureID);
 
-	// Set the texture uniform in the shader to use texture unit 0
 	GLint textureLocation = m_shaderProgram.GetUniformLocation("particleTexture");
 	glUniform1i(textureLocation, 0);
 
-	// Draw the particles
 	glDrawArrays(GL_POINTS, 0, std::min(m_particleCount, m_particleCapacity));
 
-	// Unbind the texture and VAO to clean up the state
 	glBindTexture(GL_TEXTURE_2D, 0);
 	VertexArrayObject::Unbind();
+
 	RenderGUI();
 
-	// Ensure to call Application::Render() for any additional rendering steps
 	Application::Render();
 }
 
@@ -243,6 +302,9 @@ void FinalProject::RenderGUI()
 	ImGui::DragFloat3("Light position", &m_lightPosition[0], 0.1f);
 	ImGui::ColorEdit3("Light color", &m_lightColor[0]);
 	ImGui::DragFloat("Light intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
+	ImGui::DragFloat("xPos", &xPos, 0.0f, -10.0f, 10.0f);
+	ImGui::DragFloat("yPos", &yPos, 0.0f, -10.0f, 10.0f);
+	ImGui::DragFloat("zPos", &zPos, 0.0f, -10.0f, 10.0f);
 	ImGui::Separator();
 
 	m_imGui.EndFrame();
@@ -282,23 +344,27 @@ void FinalProject::InitializeShaders()
 		std::cout << "Error linking shaders" << std::endl;
 	}
 	m_currentTimeUniform = m_shaderProgram.GetUniformLocation("CurrentTime");
+	m_viewProjMatrixUniform = m_shaderProgram.GetUniformLocation("ViewProjMatrix");
 }
 
 void FinalProject::EmitParticle()
 {
-	float size = RandomRange(10.0f, 30.0f);
-	float duration = RandomRange(1.0f, 2.0f);
+	float size = RandomRange(30.0f, 70.0f);
+	float duration = RandomRange(1.0f, 3.0f);
 	Color color = RandomColor();
-	float xOffset = RandomRange(-0.1f, 0.1f);
+	float xOffset = RandomRange(-0.35f, 0.35f);
+	float zOffset = RandomRange(-0.35f, 0.35f);
 	Particle particle;
-	particle.position = glm::vec2(-0.02f + xOffset, -0.45f);
+	particle.position = glm::vec3(xOffset+xPos, yPos, zOffset+zPos);
 	particle.size = size;
 	particle.birth = GetCurrentTime();
-	particle.duration = RandomRange(1.0f, 3.0f);
+	particle.duration = duration;
 	particle.color = color;
-	particle.velocity = RandomDirection() * RandomRange(0.5f, 2.0f);
+	particle.velocity = RandomDirection() * RandomRange(0.5f, 5.0f);
+	particle.velocity.y = abs(particle.velocity.y) + 0.5f; // Ensure upward movement
 	particle.uv = glm::vec2(0.0f, 0.0f);
-	std::cout << "EmitParticle" << particle.position.x << std::endl;
+	std::cout << "EmitParticle Position: (" << particle.position.x << ", " << particle.position.y << ", " << particle.position.z << ")" << std::endl;
+
 	unsigned int particleIndex = m_particleCount % m_particleCapacity;
 
 	m_vbo.Bind();

@@ -1,6 +1,6 @@
 #version 330 core
 
-layout (location = 0) in vec2 ParticlePosition;
+layout (location = 0) in vec3 ParticlePosition;
 layout (location = 1) in float ParticleSize;
 layout (location = 2) in float ParticleBirth;
 layout (location = 3) in float ParticleDuration;
@@ -10,35 +10,46 @@ layout (location = 5) in vec2 ParticleVelocity;
 out vec4 Color;
 
 uniform float CurrentTime;
+uniform mat4 ViewProjMatrix; // View-Projection Matrix
+uniform mat4 ModelMatrix;    // Model Matrix
 
 void main()
 {
     float age = CurrentTime - ParticleBirth;
     gl_PointSize = age < ParticleDuration ? ParticleSize : 0;
 
-    float initialVelocity = 0.1;
+    float initialVelocity = 0.2;
     float acceleration = 0.05;
     float fadingSpeed = 0.005;
 
     float velocityFactor = min(1.0, age / ParticleDuration);
 
-    vec2 velocity = vec2(0, initialVelocity + acceleration * velocityFactor);
-    velocity -= vec2(0, fadingSpeed * (ParticleDuration - age));
+    // Combine horizontal velocity from ParticleVelocity and a vertical component
+    vec3 velocity = vec3(0, initialVelocity + acceleration * velocityFactor, 0);
+    velocity.y += initialVelocity + acceleration * velocityFactor - fadingSpeed * (ParticleDuration - age);
 
-    vec2 position = ParticlePosition;
+    vec3 position = ParticlePosition;
     
-    // Adjust x position based on initial x position
+    // Adjust x and z positions to move towards the center (0, 0)
     if (ParticlePosition.x < 0.0) {
-        // Move particles to the right until x = 0
         position.x += abs(ParticlePosition.x) * velocityFactor;
     } else if (ParticlePosition.x > 0.0) {
-        // Move particles to the left until x = 0
         position.x -= ParticlePosition.x * velocityFactor;
     }
     
+    if (ParticlePosition.z < 0.0) {
+        position.z += abs(ParticlePosition.z) * velocityFactor;
+    } else if (ParticlePosition.z > 0.0) {
+        position.z -= ParticlePosition.z * velocityFactor;
+    }
+
     position += velocity * age;
-    position += 0.5 * vec2(0, 0) * age * age;
-    gl_Position = vec4(position, -1.0, 1);
+
+    // Transform the position with the model matrix to maintain relative position to the model
+    vec4 worldPosition = ModelMatrix * vec4(position, 1.0);
+
+    // Transform to clip space using the view-projection matrix
+    gl_Position = ViewProjMatrix * worldPosition;
 
     float t = clamp(age / ParticleDuration, 0.0, 1.0);
     Color = mix(vec4(1.0, 1.0, 0.0, 1.0), vec4(1.0, 0.5, 0.0, 1.0), smoothstep(0.0, 0.333, t));
